@@ -1,33 +1,9 @@
-/* zarzadca.c */
-#include <stdio.h>
-#include <sys/shm.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <unistd.h>
-#include <stdlib.h> 
-#include <time.h>
-#include <sys/wait.h>
-#include <signal.h>
-#include <string.h>
-#define SHM_SIZE 12
-#define MAX_PROCESSES 10
-
-// Struktura komunikatu
-struct msgbuf {
-    long mtype; // Typ komunikatu
-    int pid;  // PID procesu klienta
-};
+#include "utility.c"
 
 int shmID, msgID;
 int *shared_mem;
 
-void koniec(int sig) {
-    msgctl(msgID, IPC_RMID, NULL);
-    shmctl(shmID, IPC_RMID, NULL);
-    printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
-    exit(1);
-}
-
+void koniec(int sig);
 
 int main() {
     
@@ -56,14 +32,14 @@ int main() {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
-    shmID = shmget(shm_key, SHM_SIZE * sizeof(int), IPC_CREAT | IPC_EXCL | 0666);
+    shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666);
     if (shmID == -1) {
         perror("shmget");
         exit(EXIT_FAILURE);
     }
 
     // Mapuj pamięć dzieloną
-    shared_mem = (int *)shmat(shmID, NULL, 0);
+    //shared_mem = (SharedMemory *)shmat(shmID, NULL, 0);
     printf("Pamięć dzielona utworzona. SHMID: %d\n", shmID);
 
     // Inicjalizacja pamięci dzielonej
@@ -116,4 +92,12 @@ int main() {
     shmctl(shmID, IPC_RMID, NULL);
     printf("MAIN: Koniec.\n");
     return 0;
+}
+
+
+void koniec(int sig) {
+    msgctl(msgID, IPC_RMID, NULL);
+    shmctl(shmID, IPC_RMID, NULL);
+    printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
+    exit(1);
 }

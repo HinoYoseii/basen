@@ -11,3 +11,7 @@ kasjer: kasjer.o
 	gcc -o kasjer kasjer.o
 kasjer.o: kasjer.c
 	gcc -c kasjer.c
+utility: utility.o
+	gcc -o utility utility.o
+utility.o: utility.c
+	gcc -c utility.c
