@@ -15,7 +15,7 @@
 // Struktura komunikatu
 struct msgbuf {
     long mtype; // Typ komunikatu
-    pid_t pid;  // PID procesu klienta
+    int pid;  // PID procesu klienta
 };
 
 int shmID, msgID;
@@ -42,9 +42,8 @@ int main() {
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'A')) == -1) {
         printf("Blad ftok A(main)\n");
-        exit(1);
     }
-    msgID = msgget(msg_key, IPC_CREAT | 0666);
+    msgID = msgget(msg_key, IPC_CREAT |  IPC_EXCL  | 0666);
     if (msgID == -1) {
         perror("msgget");
         exit(EXIT_FAILURE);
@@ -68,27 +67,40 @@ int main() {
     printf("Pamięć dzielona utworzona. SHMID: %d\n", shmID);
 
     // Inicjalizacja pamięci dzielonej
-   // memset(shared_mem, 0, SHM_SIZE);
+    // memset(shared_mem, 0, SHM_SIZE);
+
+    //uruchomienie kasjera
+    pid_t pid = fork();
+
+    if (pid == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid == 0) {
+        // Proces potomny - uruchom `kasjer`
+        execl("./kasjer", "kasjer", NULL);
+        perror("execl");
+        exit(EXIT_FAILURE); // Jeśli execl się nie powiedzie
+    }
 
     // Inicjalizuj generator liczb losowych
-    //srand(time(NULL));
+    srand(time(NULL));
 
-    // for (int i = 0; i < MAX_PROCESSES; i++) {
-    //     pid_t pid = fork();
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        pid_t pid = fork();
 
-    //     if (pid == -1) {
-    //         perror("fork");
-    //         exit(EXIT_FAILURE);
-    //     } else if (pid == 0) {
-    //         // Proces potomny - uruchom klienta
-    //         execl("./klient", "klient", NULL);
-    //         perror("execl");
-    //         exit(EXIT_FAILURE);
-    //     } else {
-    //         // Proces macierzysty - odczekaj losowy czas (1-5 sekund)
-    //         sleep(rand() % 5 + 1);
-    //     }
-    // }
+        if (pid == -1) {
+            perror("fork");
+            exit(EXIT_FAILURE);
+        } else if (pid == 0) {
+            // Proces potomny - uruchom klienta
+            execl("./klient", "klient", NULL);
+            perror("execl");
+            exit(EXIT_FAILURE);
+        } else {
+            // Proces macierzysty - odczekaj losowy czas (1-5 sekund)
+            sleep(rand() % 5 + 1);
+        }
+    }
 
     //printf("Zarządca zakończył tworzenie procesów.\n");
 
