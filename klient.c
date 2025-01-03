@@ -13,7 +13,7 @@ int main() {
     SharedMemory *shared_mem;
 
     // Uzyskaj dostęp do kolejki komunikatów
-    if ((msg_key = ftok(".", 'A')) == -1) {
+    if ((msg_key = ftok(".", 'M')) == -1) {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
@@ -23,7 +23,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    if ((shm_key = ftok(".", 'B')) == -1) {
+    if ((shm_key = ftok(".", 'S')) == -1) {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
@@ -41,26 +41,22 @@ int main() {
 
     time(&now);
     local = localtime(&now);
-
-    printf("[%02d:%02d:%02d] Wygenerowano klienta: %d\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+    int vip = rand()%2;
+    printf("[%02d:%02d:%02d] Wygenerowano klienta: %d VIP: %d \n", local->tm_hour, local->tm_min, local->tm_sec, getpid(), vip);
     
-    msg.mtype = 1; // Typ komunikatu
+    
+     // Typ komunikatu
     msg.pid = getpid();
-    
-    if (msgsnd(msgID, &msg, sizeof(int), 0) == -1) {
+    msg.mtype = 2;
+
+    if(vip){
+        msg.mtype = 1;
+    }
+
+    if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
     }
-
-    shared_mem->count = 0;
-    Client klient;
-
-    klient.pid = getpid();
-    klient.age = rand() % 1 + 100;
-    klient.vip = rand() % 2;
-
-    shared_mem->clients[shared_mem->count] = klient;
-    shared_mem->count++;
-
+    
     return 0;
 }

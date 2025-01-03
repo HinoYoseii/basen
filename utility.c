@@ -13,6 +13,8 @@
 #define SHM_SIZE 12
 #define MAX_PROCESSES 10
 #define MAX_CLIENTS 100
+#define KASJER 1
+#define KASJER_VIP 2
 
 struct msgbuf {
     long mtype; // Typ komunikatu

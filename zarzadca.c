@@ -16,7 +16,7 @@ int main() {
     key_t msg_key, shm_key;
 
     // Utwórz kolejkę komunikatów
-    if ((msg_key = ftok(".", 'A')) == -1) {
+    if ((msg_key = ftok(".", 'M')) == -1) {
         printf("Blad ftok A(main)\n");
     }
     msgID = msgget(msg_key, IPC_CREAT |  IPC_EXCL  | 0666);
@@ -28,7 +28,7 @@ int main() {
     printf("Kolejka komunikatów utworzona. MSGID: %d\n", msgID);
 
     // Utwórz pamięć dzieloną
-    if ((shm_key = ftok(".", 'B')) == -1) {
+    if ((shm_key = ftok(".", 'S')) == -1) {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
@@ -40,7 +40,7 @@ int main() {
 
     // Mapuj pamięć dzieloną
     //shared_mem = (SharedMemory *)shmat(shmID, NULL, 0);
-    printf("Pamięć dzielona utworzona. SHMID: %d\n", shmID);
+    printf("Pamięć dzielona utworzona. SHMID: %d\n\n", shmID);
 
     // Inicjalizacja pamięci dzielonej
     // memset(shared_mem, 0, SHM_SIZE);
@@ -57,7 +57,6 @@ int main() {
         perror("execl");
         exit(EXIT_FAILURE); // Jeśli execl się nie powiedzie
     }
-
     // Inicjalizuj generator liczb losowych
     srand(time(NULL));
 
@@ -74,7 +73,7 @@ int main() {
             exit(EXIT_FAILURE);
         } else {
             // Proces macierzysty - odczekaj losowy czas (1-5 sekund)
-            sleep(rand() % 5 + 1);
+            sleep(rand() % 3 + 1);
         }
     }
 

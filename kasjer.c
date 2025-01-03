@@ -2,13 +2,13 @@
 
 int main() {
     int msgid;
-    struct msgbuf message;
+    struct msgbuf msg;
     int shmID, msgID;
     key_t msg_key, shm_key;
     SharedMemory *shared_mem;
 
     // Uzyskaj dostęp do kolejki komunikatów
-    if ((msg_key = ftok(".", 'A')) == -1) {
+    if ((msg_key = ftok(".", 'M')) == -1) {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
@@ -19,7 +19,7 @@ int main() {
     }
 
     // Uzyskaj dostęp do pamięci dzielonej
-    if ((shm_key = ftok(".", 'B')) == -1) {
+    if ((shm_key = ftok(".", 'S')) == -1) {
         printf("Blad ftok A(main)\n");
         exit(1);
     }
@@ -35,21 +35,24 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Kasjer [%d]: Oczekiwanie na komunikaty...\n", getpid());
-    sleep(5);
+    printf("Kasjer [%d]: Oczekiwanie na komunikaty...\n\n", getpid());
+    sleep(10);
+    //printf("huh\n");
 
-    struct msgbuf msg;
-    
     while (1) {
-        if (msgrcv(msgID, &message, sizeof(int), 1, 0) == -1) {
+        //printf("lol\n");
+        if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
             perror("msgrcv");
             exit(1);
         }
+        if (msg.mtype == 1){
+            printf("[VIP] Kasjer przyjął klienta PID: %d\n", msg.pid);
+        }
+        if (msg.mtype == 2){
+            printf("Kasjer przyjął klienta PID: %d\n", msg.pid);
+        }
+        
 
-        // Print the PID received from the client
-        printf("Vendor received PID: %d from client.\n", message.pid);
     }
-
-    // Nigdy tu nie dojdzie, ponieważ pętla jest nieskończona
     return 0;
 }
