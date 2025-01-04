@@ -39,24 +39,34 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    int vip = (rand() % 20 + 1 == 20) ? 1 : 0;
+
     time(&now);
     local = localtime(&now);
-    int vip = rand()%2;
-    printf("[%02d:%02d:%02d] Wygenerowano klienta: %d VIP: %d \n", local->tm_hour, local->tm_min, local->tm_sec, getpid(), vip);
-    
+
+    if(vip)
+        printf("[%02d:%02d:%02d] [%d] Pojawia się klient VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+    else
+        printf("[%02d:%02d:%02d] [%d] Pojawia się klient.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     
      // Typ komunikatu
     msg.pid = getpid();
-    msg.mtype = 2;
-
-    if(vip){
-        msg.mtype = 1;
-    }
+    msg.mtype = (vip ? 1 : 2);
 
     if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
     }
+
+    if (msgrcv(msgID, &msg, sizeof(msg), 3, 0) == -1) {
+            perror("msgrcv");
+            exit(EXIT_FAILURE);
+    }
+
+    time(&now);
+    local = localtime(&now);
+    
+    printf("[%02d:%02d:%02d] [%d] Klient wchodzi na basen.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     
     return 0;
 }
