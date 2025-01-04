@@ -41,16 +41,18 @@ int main() {
 
     time(&now);
     local = localtime(&now);
-    
+
     printf("[%02d:%02d:%02d] [%d] Kasjer: Oczekiwanie na komunikaty...\n\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     sleep(3);
 
     while (1) { 
+        sleep(rand() % 3 + 1);
+
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
             perror("msgrcv");
             exit(1);
         }
-
+        
         time(&now);
         local = localtime(&now);
 
@@ -58,10 +60,8 @@ int main() {
             printf("[%02d:%02d:%02d] [%d] Kasjer obsługuje klienta VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         }
         if (msg.mtype == 2){
-            printf("[%02d:%02d:%02d] [%d] Kasjer obsługuje klienta\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+            printf("[%02d:%02d:%02d] [%d] Kasjer obsługuje klienta.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         }
-
-        sleep(rand() % 3 + 1);
         
         msg.mtype = 3;
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {

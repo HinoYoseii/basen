@@ -6,16 +6,16 @@ int main() {
     time_t now;
     struct tm *local;
     struct msgbuf message;
-    int shmID, msgID;
-    key_t msg_key, shm_key;
+    int shmID, msgID, msgrID;
+    key_t msg_key, msg2_key, shm_key;
     struct msgbuf msg;
 
     SharedMemory *shared_mem;
 
     // Uzyskaj dostęp do kolejki komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok A(main)\n");
-        exit(1);
+        printf("Blad ftok A(klient)\n");
+        exit(EXIT_FAILURE);
     }
     msgID = msgget(msg_key, IPC_CREAT | 0666);
     if (msgID == -1) {
@@ -23,9 +23,19 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    if ((msg2_key = ftok(".", 'R')) == -1) {
+        printf("Blad ftok R(klient)\n");
+        exit(EXIT_FAILURE);
+    }
+    msgrID = msgget(msg2_key, IPC_CREAT | 0666);
+    if (msgrID == -1) {
+        perror("msgget");
+        exit(EXIT_FAILURE);
+    }
+
     if ((shm_key = ftok(".", 'S')) == -1) {
-        printf("Blad ftok A(main)\n");
-        exit(1);
+        printf("Blad ftok A(klient)\n");
+        exit(EXIT_FAILURE);
     }
     shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | 0666);
     if (shmID == -1) {
@@ -65,8 +75,14 @@ int main() {
 
     time(&now);
     local = localtime(&now);
-    
+
     printf("[%02d:%02d:%02d] [%d] Klient wchodzi na basen.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+
+    msg.mtype = 1;
+    if (msgsnd(msgrID, &msg, sizeof(msg), 0) == -1) {
+        perror("msgsnd");
+        exit(EXIT_FAILURE);
+    }
     
     return 0;
 }

@@ -1,14 +1,14 @@
 #include "utility.c"
 
-int shmID, msgID;
+int shmID, msgID, msgrID;
 int *shared_mem;
-pid_t pid_kasjer;
+pid_t pid_kasjer, pid_ratownik;
 
 void koniec(int sig);
 
 int main() {
     srand(time(NULL));
-    
+
     struct sigaction act;
     act.sa_handler = koniec;
     sigemptyset(&act.sa_mask);
@@ -16,7 +16,7 @@ int main() {
     sigaction(SIGINT, &act, 0);
     
     pid_t pid;
-    key_t msg_key, shm_key;
+    key_t msg_key, msg_key2, shm_key;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -30,6 +30,17 @@ int main() {
 
     printf("Kolejka komunikatów utworzona. MSGID: %d\n", msgID);
 
+    if ((msg_key2 = ftok(".", 'R')) == -1) {
+        printf("Blad ftok A(main)\n");
+    }
+    msgrID = msgget(msg_key2, IPC_CREAT |  IPC_EXCL  | 0666);
+    if (msgrID == -1) {
+        perror("msgget");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Kolejka komunikatów utworzona. MSGRID: %d\n", msgrID);
+
     // Utwórz pamięć dzieloną
     if ((shm_key = ftok(".", 'S')) == -1) {
         printf("Blad ftok A(main)\n");
@@ -42,6 +53,18 @@ int main() {
     }
 
     printf("Pamięć dzielona utworzona. SHMID: %d\n\n", shmID);
+
+    pid_ratownik = fork();
+
+    if (pid_ratownik == -1) {
+        perror("fork");
+        exit(EXIT_FAILURE);
+    } else if (pid_ratownik == 0) {
+        execl("./ratownik", "ratownik", NULL);
+        perror("execl");
+        exit(EXIT_FAILURE);
+    }
+    sleep(2);
 
     //uruchomienie kasjera
     pid_kasjer = fork();
@@ -85,6 +108,7 @@ int main() {
     //    wait(NULL);
 
     kill(pid_kasjer, SIGTERM);
+    msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
     shmctl(shmID, IPC_RMID, NULL);
     printf("MAIN: Koniec.\n");
@@ -94,6 +118,7 @@ int main() {
 
 void koniec(int sig) {
     kill(pid_kasjer, SIGTERM);
+    msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
     shmctl(shmID, IPC_RMID, NULL);
     printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
