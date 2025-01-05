@@ -10,7 +10,6 @@ int main() {
     time_t now;
     struct tm *local;
 
-
     // Uzyskaj dostęp do kolejki komunikatów
     if ((msg2_key = ftok(".", 'R')) == -1) {
         printf("Blad ftok R(ratownik)\n");
@@ -24,12 +23,12 @@ int main() {
 
     // Uzyskaj dostęp do pamięci dzielonej
     if ((shm_key = ftok(".", 'S')) == -1) {
-        printf("Blad ftok S(kasjer)\n");
+        printf("Blad ftok A(main)\n");
         exit(1);
     }
-    shmID = shmget(shm_key, SHM_SIZE * sizeof(int), IPC_CREAT | 0666);
+    shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | 0666);
     if (shmID == -1) {
-        perror("shmget");
+        perror("shmget ratownik");
         exit(EXIT_FAILURE);
     }
 
@@ -39,20 +38,18 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    time(&now);
-    local = localtime(&now);
+    local = czas();
+    printf("[%02d:%02d:%02d  %d] Ratownik: Oczekiwanie na komunikaty...\n\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
 
-    printf("[%02d:%02d:%02d] [%d] Ratownik: Oczekiwanie na komunikaty...\n\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     while(1){
         if (msgrcv(msgrID, &msg, sizeof(msg), 0, 0) == -1) {
             perror("msgrcv");
             exit(EXIT_FAILURE);
         }
 
-        time(&now);
-        local = localtime(&now);
+        local = czas();
+        printf("[%02d:%02d:%02d  %d] Ratownik przydziela klientowi basen.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         
-        printf("[%02d:%02d:%02d] [%d] Ratownik przydziela klientowi basen.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
     }
 
     // while (1) { 

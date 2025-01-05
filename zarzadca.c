@@ -48,11 +48,19 @@ int main() {
     }
     shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666);
     if (shmID == -1) {
-        perror("shmget");
+        perror("shmget zarzadca");
         exit(EXIT_FAILURE);
     }
 
     printf("Pamięć dzielona utworzona. SHMID: %d\n\n", shmID);
+
+    // if ( (klucz = ftok(".", 'A')) == -1 ){
+    //   printf("Blad ftok (main)\n");
+    //   exit(1);
+    // }
+
+    // // tworzymy N = 10 semafory
+    // semID = alokujSemafor(klucz, 10, IPC_CREAT | IPC_EXCL | 0666);
 
     pid_ratownik = fork();
 

@@ -9,6 +9,7 @@
 #include <sys/wait.h>
 #include <signal.h>
 #include <string.h>
+#include <sys/sem.h>
 
 #define SHM_SIZE 12
 #define MAX_PROCESSES 10
@@ -28,6 +29,26 @@ typedef struct {
 } Client;
 
 typedef struct {
-    int count;              // Liczba aktywnych klientów
-    Client clients[MAX_CLIENTS]; // Lista klientów
+    int pid;
+    int wiek;
+    int wiek_opiekuna; 
+    time_t czas_wyjscia;        // Liczba aktywnych klientów
+     // Lista klientów
 } SharedMemory;
+
+struct klient{
+    int pid;
+    int wiek;
+    int wiek_opiekuna;
+    time_t czas_wyjscia;
+};
+
+struct tm* czas() {
+    static time_t now;
+    static struct tm local_time;
+
+    time(&now);                     // Pobierz bieżący czas
+    local_time = *localtime(&now);  // Konwertuj na czas lokalny
+
+    return &local_time;             // Zwróć wskaźnik do struktury czasu
+}
