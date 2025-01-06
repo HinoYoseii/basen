@@ -5,6 +5,7 @@ int main() {
     srand(time(NULL));
     time_t now;
     struct tm *local;
+    struct tm *wyjscie;
     struct msgbuf message;
     int shmID, msgID, msgrID;
     key_t msg_key, msg2_key, shm_key;
@@ -62,7 +63,7 @@ int main() {
     msg.pid = getpid();
     msg.mtype = (vip ? 1 : 2);
     gen_klient.pid = getpid();
-    gen_klient.wiek = (rand() % 5) + 1;
+    gen_klient.wiek = (rand() % 70) + 1;
     gen_klient.wiek_opiekuna = (gen_klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     gen_klient.czas_wyjscia = time(NULL);
 
@@ -71,14 +72,14 @@ int main() {
         exit(EXIT_FAILURE);
     }
     
-    //memcpy(shared_mem, &gen_klient, sizeof(struct klient));
+    memcpy(shared_mem, &gen_klient, sizeof(struct klient));
 
     if (msgrcv(msgID, &msg, sizeof(msg), 3, 0) == -1) {
             perror("msgrcv");
             exit(EXIT_FAILURE);
     }
 
-    //memcpy(&gen_klient, shared_mem, sizeof(struct klient));
+    memcpy(&gen_klient, shared_mem, sizeof(struct klient));
 
     local = czas();
     printf("[%02d:%02d:%02d  %d] Klient wchodzi na basen.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
@@ -93,11 +94,12 @@ int main() {
         printf("[%02d:%02d:%02d  %d] Klient zakłada czepek.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     }
 
+    wyjscie = localtime(&gen_klient.czas_wyjscia);
+    printf("[%d] Czas wyjścia klienta: %02d:%02d:%02d\n", getpid(), wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
     msg.mtype = 1;
     if (msgsnd(msgrID, &msg, sizeof(msg), 0) == -1) {
         perror("msgsnd");
         exit(EXIT_FAILURE);
     }
-    
     return 0;
 }

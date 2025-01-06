@@ -62,7 +62,7 @@ int main() {
             printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         }
         
-        //memcpy(&gen_klient, shared_mem, sizeof(struct klient));
+        memcpy(&gen_klient, shared_mem, sizeof(struct klient));
         
         local = czas();
         if(gen_klient.wiek < 10 ){
@@ -72,8 +72,8 @@ int main() {
             printf("[%02d:%02d:%02d  %d] Klient płaci za bilet.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, gen_klient.wiek);
         }
 
-        //gen_klient.czas_wyjscia = time(NULL) + 3600;
-        //memcpy(shared_mem, &gen_klient, sizeof(struct klient));
+        gen_klient.czas_wyjscia = time(NULL) + 3600;
+        memcpy(shared_mem, &gen_klient, sizeof(struct klient));
         
         msg.mtype = 3;
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
