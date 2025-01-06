@@ -1,13 +1,19 @@
 #include "utility.c"
+#define SEKUNDA 5000
 
-int shmID, msgID, msgrID;
-int *shared_mem;
+int shmID, msgID, msgrID, shmtID;
 pid_t pid_kasjer, pid_ratownik;
 
+volatile bool stop_time;
+pthread_t t_czasomierz;
+char* shm_czas_adres;
+
 void koniec(int sig);
+void *czasomierz();
 
 int main() {
     srand(time(NULL));
+    stop_time = false;
 
     struct sigaction act;
     act.sa_handler = koniec;
@@ -16,7 +22,7 @@ int main() {
     sigaction(SIGINT, &act, 0);
     
     pid_t pid;
-    key_t msg_key, msg_key2, shm_key;
+    key_t msg_key, msg_key2, shm_key, shmt_key;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -52,15 +58,29 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    printf("Pamięć dzielona utworzona. SHMID: %d\n\n", shmID);
+    printf("Pamięć dzielona utworzona. SHMID: %d\n", shmID);
 
-    // if ( (klucz = ftok(".", 'A')) == -1 ){
-    //   printf("Blad ftok (main)\n");
-    //   exit(1);
-    // }
+    if ((shmt_key = ftok(".", 'T')) == -1) {
+        printf("Blad ftok T(main)\n");
+        exit(1);
+    }
+    shmtID = shmget(shmt_key, sizeof(int), IPC_CREAT | IPC_EXCL | 0666);
+    if (shmtID == -1) {
+        perror("shmget zarzadca");
+        exit(EXIT_FAILURE);
+    }
 
-    // // tworzymy N = 10 semafory
-    // semID = alokujSemafor(klucz, 10, IPC_CREAT | IPC_EXCL | 0666);
+    printf("Pamięć dzielona utworzona. SHMTID: %d\n\n", shmID);
+
+    shm_czas_adres = (char*)shmat(shmtID, NULL, 0);
+    if (shm_czas_adres == (char*)(-1))
+    {
+        perror("shmat - problem z dolaczeniem pamieci do obslugi czasu");
+        exit(EXIT_FAILURE);
+    }
+
+    *shm_czas_adres = 0;
+    pthread_create(&t_czasomierz, NULL, &czasomierz, NULL);
 
     pid_ratownik = fork();
 
@@ -114,21 +134,38 @@ int main() {
 
     //for (i = 0; i < 2 * P; i++)
     //    wait(NULL);
-
+    stop_time = true;
+    pthread_join(t_czasomierz, NULL);
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
     shmctl(shmID, IPC_RMID, NULL);
+    shmctl(shmtID, IPC_RMID, NULL);
     printf("MAIN: Koniec.\n");
     return 0;
 }
 
 
 void koniec(int sig) {
+    stop_time = true;
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
     shmctl(shmID, IPC_RMID, NULL);
+    shmctl(shmtID, IPC_RMID, NULL);
     printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
     exit(1);
+}
+
+void *czasomierz()
+{
+    int *jaki_czas = (int *)shm_czas_adres;
+    while (*jaki_czas < 44100 && !stop_time)
+    {
+        usleep(SEKUNDA);
+        (*jaki_czas)++;
+    }
+
+    // kill(pid_kasjer, SIGINT);
+    return 0;
 }

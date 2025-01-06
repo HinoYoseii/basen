@@ -1,3 +1,5 @@
+#pragma once
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -10,6 +12,8 @@
 #include <signal.h>
 #include <string.h>
 #include <sys/sem.h>
+#include <pthread.h>
+#include <stdbool.h>
 
 #define SHM_SIZE 12
 #define MAX_PROCESSES 10
@@ -52,3 +56,14 @@ struct tm* czas() {
 
     return &local_time;             // Zwróć wskaźnik do struktury czasu
 }
+
+void godz_sym(int sekundy, char* res)
+{
+    int sek_r = sekundy % 60;
+    int minuty = sekundy / 60;
+    int min_r = minuty % 60;
+    int godziny = (minuty / 60) + 9;
+
+    snprintf(res, 9, "%02d:%02d:%02d\n", godziny, min_r, sek_r);
+}
+

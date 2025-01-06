@@ -7,10 +7,11 @@ int main() {
     struct tm *local;
     struct tm *wyjscie;
     struct msgbuf message;
-    int shmID, msgID, msgrID;
-    key_t msg_key, msg2_key, shm_key;
+    int shmID, msgID, msgrID, shmtID;
+    key_t msg_key, msg2_key, shm_key, shmt_key;
     struct msgbuf msg;
     struct klient gen_klient;
+    char godzina[9];
 
     SharedMemory *shared_mem;
 
@@ -51,13 +52,32 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
+    if ((shmt_key = ftok(".", 'T')) == -1) {
+        printf("Blad ftok T(main)\n");
+        exit(1);
+    }
+    shmtID = shmget(shmt_key, sizeof(int), IPC_CREAT | 0666);
+    if (shmtID == -1) {
+        perror("shmget zarzadca");
+        exit(EXIT_FAILURE);
+    }
+
+    char* shm_czas_adres = (char*)shmat(shmtID, NULL, 0);
+    if (shm_czas_adres == (char*)(-1))
+    {
+        perror("shmat - problem z dolaczeniem pamieci do obslugi czasu");
+        exit(EXIT_FAILURE);
+    }
+
+
     int vip = (rand() % 20 + 1 == 20) ? 1 : 0;
 
+    godz_sym(*((int *)shm_czas_adres), godzina);
     local = czas();
     if(vip)
-        printf("[%02d:%02d:%02d  %d] Pojawia się klient VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+        printf("[%s  %d] Pojawia się klient VIP.\n", godzina, getpid());
     else
-        printf("[%02d:%02d:%02d  %d] Pojawia się klient.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+        printf("[%s  %d] Pojawia się klient.\n", godzina, getpid());
     
      // Typ komunikatu
     msg.pid = getpid();
