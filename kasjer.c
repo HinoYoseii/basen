@@ -4,13 +4,12 @@ int main() {
     srand(time(NULL));
     int msgid;
     struct msgbuf msg;
-    int shmID, msgID;
-    key_t msg_key, shm_key;
+    int shmID, msgID, shmtID;
+    key_t msg_key, shm_key, shmt_key;
     SharedMemory *shared_mem;
     time_t now;
-    struct tm *local;
     struct klient gen_klient;
-
+    char godzina[9];
 
     // Uzyskaj dostęp do kolejki komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -40,8 +39,25 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    local = czas();
-    printf("[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...\n\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+    if ((shmt_key = ftok(".", 'T')) == -1) {
+        printf("Blad ftok T(main)\n");
+        exit(1);
+    }
+    shmtID = shmget(shmt_key, sizeof(int), IPC_CREAT | 0666);
+    if (shmtID == -1) {
+        perror("shmget zarzadca");
+        exit(EXIT_FAILURE);
+    }
+
+    char* shm_czas_adres = (char*)shmat(shmtID, NULL, 0);
+    if (shm_czas_adres == (char*)(-1)) {
+        perror("shmat - problem z dolaczeniem pamieci do obslugi czasu");
+        exit(EXIT_FAILURE);
+    }
+
+    // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
+    godz_sym(*((int *)shm_czas_adres), godzina);
+    printf("[%s  %d] Kasjer: Oczekiwanie na komunikaty...\n\n", godzina, getpid());
     sleep(3);
 
     while (1) { 
@@ -51,30 +67,32 @@ int main() {
             perror("msgrcv");
             exit(1);
         }
-        
-        local = czas();
 
-        if (msg.mtype == 1){
-            printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
+        godz_sym(*((int *)shm_czas_adres), godzina);
 
+        if (msg.mtype == 1) {
+            printf("[%s  %d] Kasjer obsługuje klienta VIP.\n", godzina, msg.pid);
         }
-        if (msg.mtype == 2){
-            printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+        if (msg.mtype == 2) {
+            printf("[%s  %d] Kasjer obsługuje klienta.\n", godzina, msg.pid);
         }
-        
+
         memcpy(&gen_klient, shared_mem, sizeof(struct klient));
-        
-        local = czas();
-        if(gen_klient.wiek < 10 ){
-            printf("[%02d:%02d:%02d  %d] Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, gen_klient.wiek);
-        }
-        else{
-            printf("[%02d:%02d:%02d  %d] Klient płaci za bilet.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, gen_klient.wiek);
+
+        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
+        godz_sym(*((int *)shm_czas_adres), godzina);
+        if (gen_klient.wiek < 10) {
+            printf("[%s  %d] Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", godzina, msg.pid, gen_klient.wiek);
+        } else {
+            printf("[%s  %d] Klient płaci za bilet.\n", godzina, msg.pid);
         }
 
-        gen_klient.czas_wyjscia = time(NULL) + 3600;
+        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
+        godz_sym(*((int *)shm_czas_adres), godzina);
+        gen_klient.czas_wyjscia = (*((int *)shm_czas_adres)) + 3600;
         memcpy(shared_mem, &gen_klient, sizeof(struct klient));
-        
+
         msg.mtype = 3;
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
             perror("msgsnd");

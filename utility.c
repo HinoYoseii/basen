@@ -36,7 +36,7 @@ typedef struct {
     int pid;
     int wiek;
     int wiek_opiekuna; 
-    time_t czas_wyjscia;        // Liczba aktywnych klientów
+    int czas_wyjscia;        // Liczba aktywnych klientów
      // Lista klientów
 } SharedMemory;
 
@@ -44,7 +44,7 @@ struct klient{
     int pid;
     int wiek;
     int wiek_opiekuna;
-    time_t czas_wyjscia;
+    int czas_wyjscia;
 };
 
 struct tm* czas() {
@@ -66,4 +66,5 @@ void godz_sym(int sekundy, char* res)
 
     snprintf(res, 9, "%02d:%02d:%02d\n", godziny, min_r, sek_r);
 }
+
 

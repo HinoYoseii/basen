@@ -92,8 +92,6 @@ int main() {
         perror("execl");
         exit(EXIT_FAILURE);
     }
-    sleep(2);
-
     //uruchomienie kasjera
     pid_kasjer = fork();
 
