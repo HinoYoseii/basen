@@ -28,15 +28,9 @@ struct msgbuf {
 
 typedef struct {
     int pid;
-    int age;
-    int vip; // 0/1)
-} Client;
-
-typedef struct {
-    int pid;
     int wiek;
     int wiek_opiekuna; 
-    int czas_wyjscia;        // Liczba aktywnych klientów
+    time_t czas_wyjscia;        // Liczba aktywnych klientów
      // Lista klientów
 } SharedMemory;
 
@@ -44,7 +38,7 @@ struct klient{
     int pid;
     int wiek;
     int wiek_opiekuna;
-    int czas_wyjscia;
+    time_t czas_wyjscia;
 };
 
 struct tm* czas() {

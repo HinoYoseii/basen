@@ -55,8 +55,8 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    godz_sym(*((int *)shm_czas_adres), godzina);
-    printf("[%s  %d] Ratownik: Oczekiwanie na komunikaty...\n", godzina, getpid());
+    local = czas();
+    printf("[%02d:%02d:%02d  %d] Ratownik: Oczekiwanie na komunikaty...\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
 
     while(1){
         if (msgrcv(msgrID, &msg, sizeof(msg), 0, 0) == -1) {

@@ -4,6 +4,8 @@
 int main() {
     srand(time(NULL));
     time_t now;
+    struct tm *local;
+    struct tm *wyjscie;
     struct msgbuf message;
     int shmID, msgID, msgrID, shmtID;
     key_t msg_key, msg2_key, shm_key, shmt_key;
@@ -40,7 +42,7 @@ int main() {
     }
     shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | 0666);
     if (shmID == -1) {
-        perror("shmget klient");
+        perror("shmget klient shmID");
         exit(EXIT_FAILURE);
     }
 
@@ -69,12 +71,11 @@ int main() {
     int vip = (rand() % 20 + 1 == 20) ? 1 : 0;
 
     // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
-    godz_sym(*((int *)shm_czas_adres), godzina);
-
+    local = czas();
     if(vip)
-        printf("[%s  %d] Pojawia się klient VIP.\n", godzina, getpid());
+        printf("[%02d:%02d:%02d  %d] Pojawia się klient VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     else
-        printf("[%s  %d] Pojawia się klient.\n", godzina, getpid());
+        printf("[%02d:%02d:%02d  %d] Pojawia się klient.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     
     // Typ komunikatu
     msg.pid = getpid();
@@ -98,23 +99,24 @@ int main() {
     memcpy(&gen_klient, shared_mem, sizeof(struct klient));
 
     // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
-    godz_sym(*((int *)shm_czas_adres), godzina);
-    printf("[%s  %d] Klient wchodzi na basen.\n", godzina, getpid());
+    local = czas();
+    printf("[%02d:%02d:%02d  %d] Klient wchodzi na basen.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
 
     if(gen_klient.wiek <= 3){
         // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
-        godz_sym(*((int *)shm_czas_adres), godzina);
-        printf("[%s  %d] Dziecko zakłada pampers do plywania. Wiek: %d\n", godzina, getpid(), gen_klient.wiek);
+        local = czas();
+        printf("[%02d:%02d:%02d  %d] Dziecko zakłada pampers do plywania. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, getpid(), gen_klient.wiek);
     }
 
     if((rand() % 6 + 1 == 6) ? 1 : 0){
         // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
-        godz_sym(*((int *)shm_czas_adres), godzina);
-        printf("[%s  %d] Klient zakłada czepek.\n", godzina, getpid());
+        local = czas();
+        printf("[%02d:%02d:%02d  %d] Klient zakłada czepek.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     }
 
-    godz_sym(gen_klient.czas_wyjscia, godzina);
-    printf("[%d] Czas wyjścia klienta: %s\n", getpid(), godzina);
+
+    wyjscie = localtime(&gen_klient.czas_wyjscia);
+    printf("[%d] Czas wyjścia klienta: %02d:%02d:%02d\n", getpid(), wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
     msg.mtype = 1;
     if (msgsnd(msgrID, &msg, sizeof(msg), 0) == -1) {
         perror("msgsnd");
