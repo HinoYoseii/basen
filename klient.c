@@ -6,7 +6,7 @@ int main() {
     struct tm *local;
     struct tm *wyjscie;
 
-    int msgID, msgrID;
+    int msgID, msgrID, nr_basenu, vip;
     key_t msg_key, msg2_key;
     struct msgbuf msg;
     struct klient_dane klient;
@@ -30,10 +30,10 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    int vip = (rand() % 5 + 1 == 5) ? 1 : 0;
+    vip = (rand() % 20 + 1 == 20) ? 1 : 2;
 
     local = czas();
-    if(vip)
+    if(vip == 1)
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient VIP.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     else
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
@@ -43,7 +43,7 @@ int main() {
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
 
     msg.pid = getpid();
-    msg.mtype = (vip ? 1 : 2);
+    msg.mtype = vip;
     msg.wiek = klient.wiek;
     msg.czas_wyjscia = 0;
 
@@ -53,26 +53,34 @@ int main() {
     }
     
     if (msgrcv(msgID, &msg, sizeof(msg), getpid(), 0) == -1) {
-            perror("msgrcv klient");
-            exit(EXIT_FAILURE);
+        perror("msgrcv klient");
+        exit(EXIT_FAILURE);
     }
 
     local = czas();
-    printf("[%02d:%02d:%02d  %d] Klient wchodzi na basen.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na basen.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
 
     if(klient.wiek <= 3){
         local = czas();
-        printf("[%02d:%02d:%02d  %d] Dziecko zakłada pampers do plywania. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, getpid(), klient.wiek);
+        printf("%s[%02d:%02d:%02d  %d]%s Dziecko zakłada pampers do plywania. Wiek: %d\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.wiek);
     }
 
     if((rand() % 6 + 1 == 6) ? 1 : 0){
         local = czas();
-        printf("[%02d:%02d:%02d  %d] Klient zakłada czepek.\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
+        printf("%s[%02d:%02d:%02d  %d]%s Klient zakłada czepek.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     }
 
     klient.czas_wyjscia = msg.czas_wyjscia;
     wyjscie = localtime(&klient.czas_wyjscia);
-    printf("[%d] Czas wyjścia klienta: %02d:%02d:%02d\n", getpid(), wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
+    printf("%s[%d]%s Czas wyjścia klienta: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
+    
+     do {
+        nr_basenu = rand() % 3 + 1;
+        sleep(10);
+
+    } while (time(NULL) < klient.czas_wyjscia);
+
+    printf("%s[%d]%s Czas wyjścia klienta osiągnięty: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
 
     return 0;
 }

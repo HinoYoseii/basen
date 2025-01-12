@@ -10,7 +10,7 @@ int main() {
     struct tm *local;
 
     if ((msg2_key = ftok(".", 'R')) == -1) {
-        printf("Blad ftok R(ratownik)");
+        printf("Blad ftok R (ratownik)");
         exit(EXIT_FAILURE);
     }
 
@@ -21,7 +21,9 @@ int main() {
 
     local = czas();
     printf("%s[%02d:%02d:%02d  %d] Ratownik: Oczekiwanie na komunikaty...%s\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
-
+    while(1){
+        continue;
+    }
     // while(1){
     //     
     //     local = czas();

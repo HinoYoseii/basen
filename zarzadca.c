@@ -19,22 +19,22 @@ int main() {
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok A(main)");
+        printf("Blad ftok M (zarzadca)");
+        exit(EXIT_FAILURE);
     }
-    msgID = msgget(msg_key, IPC_CREAT |  IPC_EXCL  | 0666);
-    if (msgID == -1) {
-        perror("msgget");
+    if ((msgID = msgget(msg_key, IPC_CREAT |  IPC_EXCL  | 0666)) == -1) {
+        perror("Blad msgget msgID (zarzadca)");
         exit(EXIT_FAILURE);
     }
 
     printf("%sKolejka komunikatów utworzona. MSGID: %d%s\n", GREEN, msgID, RESET);
 
     if ((msg_key2 = ftok(".", 'R')) == -1) {
-        printf("Blad ftok A(main)\n");
+        printf("Blad ftok R (zarzadca)\n");
+        exit(EXIT_FAILURE);
     }
-    msgrID = msgget(msg_key2, IPC_CREAT |  IPC_EXCL  | 0666);
-    if (msgrID == -1) {
-        perror("msgget");
+    if ((msgrID = msgget(msg_key2, IPC_CREAT |  IPC_EXCL  | 0666)) == -1) {
+        perror("Blad msgget msgrID (zarzadca)");
         exit(EXIT_FAILURE);
     }
 
@@ -42,12 +42,11 @@ int main() {
 
     // Utwórz pamięć dzieloną
     if ((shm_key = ftok(".", 'S')) == -1) {
-        printf("Blad ftok A(main)\n");
-        exit(1);
+        printf("Blad ftok S (zarzadca)\n");
+        exit(EXIT_FAILURE);
     }
-    shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666);
-    if (shmID == -1) {
-        perror("shmget zarzadca");
+    if ((shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666)) == -1) {
+        perror("Blad shmget shmID (zarzadca)");
         exit(EXIT_FAILURE);
     }
 
@@ -57,43 +56,54 @@ int main() {
     pid_ratownik = fork();
 
     if (pid_ratownik == -1) {
-        perror("fork");
+        perror("Blad fork pid_ratownik (zarzadca)");
         exit(EXIT_FAILURE);
     } else if (pid_ratownik == 0) {
         execl("./ratownik", "ratownik", NULL);
-        perror("execl");
+        perror("Blad execl pid_ratownik (zarzadca)");
         exit(EXIT_FAILURE);
     }
     //uruchomienie kasjera
     pid_kasjer = fork();
 
     if (pid_kasjer == -1) {
-        perror("fork");
+        perror("Blad fork pid_kasjer (zarzadca)");
         exit(EXIT_FAILURE);
     } else if (pid_kasjer == 0) {
         execl("./kasjer", "kasjer", NULL);
-        perror("execl");
+        perror("Blad execl pid_kasjer (zarzadca)");
         exit(EXIT_FAILURE);
     }
     sleep(2);
     printf("\n");
     //uruchomienie klientów
     for (int i = 0; i < MAX_PROCESSES; i++) {
-        pid_t pid = fork();
+        pid_t pid_klient = fork();
 
-        if (pid == -1) {
-            perror("fork");
+        if (pid_klient == -1) {
+            perror("Blad fork pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
-        } else if (pid == 0) {
+        } else if (pid_klient == 0) {
             // Proces potomny - uruchom klienta
             execl("./klient", "klient", NULL);
-            perror("execl");
+            perror("Blad execl pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
         } else {
             sleep(rand() % 2 + 1);
         }
     }
 
+    for (int i = 0; i < MAX_PROCESSES; i++) {
+        int status;
+        pid_t finished_pid = wait(&status);
+        if (finished_pid == -1) {
+            perror("Błąd wait");
+            exit(EXIT_FAILURE);
+        }
+        //printf("Proces klienta o PID %d zakończył się. Status: %d\n", finished_pid, WEXITSTATUS(status));
+    }
+
+    kill(pid_ratownik, SIGTERM);
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
@@ -103,6 +113,7 @@ int main() {
 }
 
 void koniec(int sig) {
+    kill(pid_ratownik, SIGTERM);
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);

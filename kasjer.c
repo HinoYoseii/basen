@@ -30,21 +30,21 @@ int main() {
 
         local = czas();
         if (msg.mtype == 1){
-            printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+            printf("%s[%02d:%02d:%02d  %d]%s Kasjer obsługuje klienta VIP.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
         if (msg.mtype == 2){
-            printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+            printf("%s[%02d:%02d:%02d  %d]%s Kasjer obsługuje klienta.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
 
         local = czas();
         if(msg.wiek < 10){
-            printf("[%02d:%02d:%02d  %d] Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, msg.wiek);
+            printf("%s[%02d:%02d:%02d  %d]%s Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET, msg.wiek);
         }
         else{
-            printf("[%02d:%02d:%02d  %d] Klient płaci za bilet.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
+            printf("%s[%02d:%02d:%02d  %d]%s Klient płaci za bilet.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
 
-        msg.czas_wyjscia = time(NULL) + 3600;
+        msg.czas_wyjscia = time(NULL) + 20;
         msg.mtype = msg.pid;
 
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
