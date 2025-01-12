@@ -21,9 +21,16 @@
 #define KASJER 1
 #define KASJER_VIP 2
 
+const char *RED = "\033[31m";
+const char *RESET = "\033[0m";
+const char *GREEN = "\033[32m";
+const char *BLUE = "\033[34m";
+
 struct msgbuf {
     long mtype; // Typ komunikatu
     int pid;  // PID procesu klienta
+    int wiek;
+    time_t czas_wyjscia;
 };
 
 typedef struct {
@@ -34,7 +41,7 @@ typedef struct {
      // Lista klientów
 } SharedMemory;
 
-struct klient{
+struct klient_dane{
     int pid;
     int wiek;
     int wiek_opiekuna;

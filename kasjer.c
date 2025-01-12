@@ -2,102 +2,53 @@
 
 int main() {
     srand(time(NULL));
-    int msgid;
+
     struct msgbuf msg;
-    int shmID, msgID, shmtID;
-    key_t msg_key, shm_key, shmt_key;
-    SharedMemory *shared_mem;
+    int msgID;
+    key_t msg_key;
     time_t now;
     struct tm *local;
-    struct klient gen_klient;
-    char godzina[9];
 
-    // Uzyskaj dostęp do kolejki komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok M(kasjer)\n");
-        exit(1);
-    }
-    msgID = msgget(msg_key, IPC_CREAT | 0666);
-    if (msgID == -1) {
-        perror("msgget");
+        printf("Blad ftok M (kasjer)");
         exit(EXIT_FAILURE);
     }
-
-    // Uzyskaj dostęp do pamięci dzielonej
-    if ((shm_key = ftok(".", 'S')) == -1) {
-        printf("Blad ftok S(kasjer)\n");
-        exit(1);
-    }
-    shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | 0666);
-    if (shmID == -1) {
-        perror("shmget kasjer");
-        exit(EXIT_FAILURE);
-    }
-
-    shared_mem = (SharedMemory *)shmat(shmID, NULL, 0);
-    if (shared_mem == (void *)-1) {
-        perror("shmat");
-        exit(EXIT_FAILURE);
-    }
-
-    if ((shmt_key = ftok(".", 'T')) == -1) {
-        printf("Blad ftok T(main)\n");
-        exit(1);
-    }
-    shmtID = shmget(shmt_key, sizeof(int), IPC_CREAT | 0666);
-    if (shmtID == -1) {
-        perror("shmget zarzadca");
-        exit(EXIT_FAILURE);
-    }
-
-    char* shm_czas_adres = (char*)shmat(shmtID, NULL, 0);
-    if (shm_czas_adres == (char*)(-1)) {
-        perror("shmat - problem z dolaczeniem pamieci do obslugi czasu");
+    if ((msgID = msgget(msg_key, IPC_CREAT | 0666)) == -1) {
+        perror("Blad msgget msgID (kasjer)");
         exit(EXIT_FAILURE);
     }
 
     local = czas();
-    printf("[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...\n\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
-    sleep(3);
+    printf("%s[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...%s\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    sleep(5);
 
     while (1) { 
-        // sleep(rand() % 3 + 1);
-
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
-            perror("msgrcv");
-            exit(1);
+            perror("Blad msgrcv msgID (kasjer)");
+            exit(EXIT_FAILURE);
         }
 
-        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
         local = czas();
-
         if (msg.mtype == 1){
             printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta VIP.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
-
         }
         if (msg.mtype == 2){
             printf("[%02d:%02d:%02d  %d] Kasjer obsługuje klienta.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         }
 
-        memcpy(&gen_klient, shared_mem, sizeof(struct klient));
-
-        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
         local = czas();
-        if(gen_klient.wiek < 10 ){
-            printf("[%02d:%02d:%02d  %d] Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, gen_klient.wiek);
+        if(msg.wiek < 10){
+            printf("[%02d:%02d:%02d  %d] Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, msg.wiek);
         }
         else{
-            printf("[%02d:%02d:%02d  %d] Klient płaci za bilet.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid, gen_klient.wiek);
+            printf("[%02d:%02d:%02d  %d] Klient płaci za bilet.\n", local->tm_hour, local->tm_min, local->tm_sec, msg.pid);
         }
 
+        msg.czas_wyjscia = time(NULL) + 3600;
+        msg.mtype = msg.pid;
 
-        // Zmieniamy sposób pobierania czasu na wykorzystanie godz_sym
-        gen_klient.czas_wyjscia = time(NULL) + 3600;
-        memcpy(shared_mem, &gen_klient, sizeof(struct klient));
-
-        msg.mtype = 3;
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
-            perror("msgsnd");
+            perror("Blad msgsnd msgID (kasjer)");
             exit(EXIT_FAILURE);
         }
     }
