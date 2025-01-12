@@ -41,6 +41,7 @@ struct msgbuf_r {
     int pid;  // PID procesu klienta
     int wiek;
     int wiek_opiekuna;
+    char kom;
 };
 
 struct klient_dane{
@@ -48,6 +49,7 @@ struct klient_dane{
     int wiek;
     int wiek_opiekuna;
     time_t czas_wyjscia;
+    int basen;
 };
 
 struct tm* czas() {

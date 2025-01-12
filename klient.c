@@ -42,6 +42,7 @@ int main() {
     klient.pid = getpid();
     klient.wiek = (rand() % 70) + 1;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
+    klient.basen = 0;
 
     msg.pid = getpid();
     msg.mtype = vip;
@@ -49,12 +50,12 @@ int main() {
     msg.czas_wyjscia = 0;
 
     if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
-        perror("msgsnd");
+        perror("Blad msgsnd msgID (klient)");
         exit(EXIT_FAILURE);
     }
     
     if (msgrcv(msgID, &msg, sizeof(msg), getpid(), 0) == -1) {
-        perror("msgrcv klient");
+        perror("Blad msgrcv msgID (klient)");
         exit(EXIT_FAILURE);
     }
 
@@ -72,19 +73,35 @@ int main() {
     }
 
     klient.czas_wyjscia = msg.czas_wyjscia;
-    wyjscie = localtime(&klient.czas_wyjscia);
-    printf("%s[%d]%s Czas wyjścia klienta: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
+    //wyjscie = localtime(&klient.czas_wyjscia);
+    //printf("%s[%d]%s Czas wyjścia klienta: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
     
     msgr.pid = getpid();
     msgr.wiek = klient.wiek;
     msgr.wiek_opiekuna = klient.wiek_opiekuna;
 
     do {
-        //nr_basenu = rand() % 3 + 1;
-        msgr.mtype = 1;
-        
-        sleep(10);
+        if(!klient.basen){
+            //nr_basenu = rand() % 3 + 1;
+            msgr.mtype = 1;
 
+            if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
+                perror("Blad msgsnd msgrID (klient)");
+                exit(EXIT_FAILURE);
+            }
+
+            if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), getpid(), 0) == -1) {
+                perror("Blad msgrcv msgrID (klient)");
+                exit(EXIT_FAILURE);
+            }
+
+            if(msgr.kom == 't'){
+                klient.basen = 1;
+            }
+            else{
+                sleep(rand() % 10 + 5);
+            }
+        }
     } while (time(NULL) < klient.czas_wyjscia);
 
     printf("%s[%d]%s Czas wyjścia klienta osiągnięty: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
