@@ -1,6 +1,6 @@
 #include "utility.c"
 
-int shmID, msgID, msgrID;
+int msgID, msgrID;
 pid_t pid_kasjer, pid_ratownik;
 
 void koniec(int sig);
@@ -15,7 +15,7 @@ int main() {
     sigaction(SIGINT, &act, 0);
     
     pid_t pid;
-    key_t msg_key, msg_key2, shm_key;
+    key_t msg_key, msg_key2;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -40,29 +40,38 @@ int main() {
 
     printf("%sKolejka komunikatów utworzona. MSGRID: %d%s\n", GREEN, msgrID, RESET);
 
-    // Utwórz pamięć dzieloną
-    if ((shm_key = ftok(".", 'S')) == -1) {
-        printf("Blad ftok S (zarzadca)\n");
-        exit(EXIT_FAILURE);
-    }
-    if ((shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666)) == -1) {
-        perror("Blad shmget shmID (zarzadca)");
-        exit(EXIT_FAILURE);
+    // // Utwórz pamięć dzieloną
+    // key_t shm_key;
+    // int shm_ID;
+    // if ((shm_key = ftok(".", 'S')) == -1) {
+    //     printf("Blad ftok S (zarzadca)\n");
+    //     exit(EXIT_FAILURE);
+    // }
+    // if ((shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666)) == -1) {
+    //     perror("Blad shmget shmID (zarzadca)");
+    //     exit(EXIT_FAILURE);
+    // }
+
+    // printf("%sPamięć dzielona utworzona. SHMID: %d%s\n", GREEN, shmID, RESET);
+    // printf("\n");
+    char pool_id[10];
+    for (int i = 0; i < 3; i++) {
+        pid_ratownik = fork();
+
+        if (pid_ratownik == -1) {
+            perror("Blad fork pid_ratownik (zarzadca)");
+            exit(EXIT_FAILURE);
+        } else if (pid_ratownik == 0) {
+            // Konwertuj numer basenu na string i przekaż jako argument do execl
+            sprintf(pool_id, "%d", i + 1);
+            execl("./ratownik", "ratownik", pool_id, NULL);
+
+            // Jeśli execl nie zadziała, zgłoś błąd
+            perror("Blad execl pid_ratownik (zarzadca)");
+            exit(EXIT_FAILURE);
+        }
     }
 
-    printf("%sPamięć dzielona utworzona. SHMID: %d%s\n", GREEN, shmID, RESET);
-    printf("\n");
-
-    pid_ratownik = fork();
-
-    if (pid_ratownik == -1) {
-        perror("Blad fork pid_ratownik (zarzadca)");
-        exit(EXIT_FAILURE);
-    } else if (pid_ratownik == 0) {
-        execl("./ratownik", "ratownik", NULL);
-        perror("Blad execl pid_ratownik (zarzadca)");
-        exit(EXIT_FAILURE);
-    }
     //uruchomienie kasjera
     pid_kasjer = fork();
 
@@ -107,7 +116,7 @@ int main() {
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
-    shmctl(shmID, IPC_RMID, NULL);
+    //shmctl(shmID, IPC_RMID, NULL);
     printf("MAIN: Koniec.\n");
     return 0;
 }
@@ -117,7 +126,7 @@ void koniec(int sig) {
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
-    shmctl(shmID, IPC_RMID, NULL);
+    //shmctl(shmID, IPC_RMID, NULL);
     printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
     exit(1);
 }

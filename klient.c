@@ -9,6 +9,7 @@ int main() {
     int msgID, msgrID, nr_basenu, vip;
     key_t msg_key, msg2_key;
     struct msgbuf msg;
+    struct msgbuf_r msgr;
     struct klient_dane klient;
 
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -74,8 +75,14 @@ int main() {
     wyjscie = localtime(&klient.czas_wyjscia);
     printf("%s[%d]%s Czas wyjścia klienta: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
     
-     do {
-        nr_basenu = rand() % 3 + 1;
+    msgr.pid = getpid();
+    msgr.wiek = klient.wiek;
+    msgr.wiek_opiekuna = klient.wiek_opiekuna;
+
+    do {
+        //nr_basenu = rand() % 3 + 1;
+        msgr.mtype = 1;
+        
         sleep(10);
 
     } while (time(NULL) < klient.czas_wyjscia);
