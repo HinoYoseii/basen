@@ -4,6 +4,7 @@ int msgID, msgrID;
 pid_t pid_kasjer, pid_ratownik[3];
 
 void koniec(int sig);
+void clean();
 
 int main() {
     srand(time(NULL));
@@ -54,6 +55,19 @@ int main() {
 
     // printf("%sPamięć dzielona utworzona. SHMID: %d%s\n", GREEN, shmID, RESET);
     // printf("\n");
+
+    //uruchomienie kasjera
+    pid_kasjer = fork();
+
+    if (pid_kasjer == -1) {
+        perror("Blad fork pid_kasjer (zarzadca)");
+        exit(EXIT_FAILURE);
+    } else if (pid_kasjer == 0) {
+        execl("./kasjer", "kasjer", NULL);
+        perror("Blad execl pid_kasjer (zarzadca)");
+        exit(EXIT_FAILURE);
+    }
+
     char pool_id[10];
     for (int i = 0; i < 3; i++) {
         pid_ratownik[i] = fork();
@@ -71,20 +85,9 @@ int main() {
             exit(EXIT_FAILURE);
         }
     }
-
-    //uruchomienie kasjera
-    pid_kasjer = fork();
-
-    if (pid_kasjer == -1) {
-        perror("Blad fork pid_kasjer (zarzadca)");
-        exit(EXIT_FAILURE);
-    } else if (pid_kasjer == 0) {
-        execl("./kasjer", "kasjer", NULL);
-        perror("Blad execl pid_kasjer (zarzadca)");
-        exit(EXIT_FAILURE);
-    }
-    sleep(2);
+    sleep(3);
     printf("\n");
+    
     //uruchomienie klientów
     for (int i = 0; i < MAX_PROCESSES; i++) {
         pid_t pid_klient = fork();
@@ -102,14 +105,14 @@ int main() {
         }
     }
 
-    for (int i = 0; i < MAX_PROCESSES; i++) {
+    for (int i = 0; i < MAX_PROCESSES + 2; i++) {
         int status;
         pid_t finished_pid = wait(&status);
         if (finished_pid == -1) {
             perror("Błąd wait");
             exit(EXIT_FAILURE);
         }
-        //printf("Proces klienta o PID %d zakończył się. Status: %d\n", finished_pid, WEXITSTATUS(status));
+        //printf("%sProces o PID %d zakończył się. Status: %d%s\n",YELLOW, finished_pid, WEXITSTATUS(status), RESET);
     }
 
     for(int i = 0; i < 3; i++){
@@ -122,6 +125,7 @@ int main() {
     printf("MAIN: Koniec.\n");
     return 0;
 }
+
 
 void koniec(int sig) {
     for(int i = 0; i < 3; i++){

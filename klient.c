@@ -31,7 +31,7 @@ int main() {
         exit(EXIT_FAILURE);
     }
 
-    vip = (rand() % 20 + 1 == 20) ? 1 : 2;
+    vip = (rand() % 5 + 1 == 5) ? 1 : 2;
 
     local = czas();
     if(vip == 1)
@@ -79,11 +79,11 @@ int main() {
     msgr.pid = getpid();
     msgr.wiek = klient.wiek;
     msgr.wiek_opiekuna = klient.wiek_opiekuna;
-
-    do {
+    
+    while (time(NULL) < klient.czas_wyjscia){
         if(!klient.basen){
             //nr_basenu = rand() % 3 + 1;
-            msgr.mtype = 2;
+            msgr.mtype = 1;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
                 perror("Blad msgsnd msgrID (klient)");
@@ -96,23 +96,33 @@ int main() {
             }
 
             if(msgr.kom == 't'){
+                local = czas();
+                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu olimpijskiego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
                 klient.basen = 1;
             }
             else{
-                sleep(rand() % 10 + 5);
+                if(msgr.kom == 'w'){
+                    printf("%s[%d]%s Klient nie został wpuszczony przez wiek: %d.\n", YELLOW, getpid(), RESET, klient.wiek);
+                }
+                else if(msgr.kom == 'n'){
+                    printf("%s[%d]%s Klient nie został wpuszczony przez pełny basen.\n", YELLOW, getpid(), RESET);
+                }
+                sleep(5);
             }
         }
         else{
             sleep(1);
         }
-    } while (time(NULL) < klient.czas_wyjscia);
-
-    msgr.mtype = 1;
-    if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
-        perror("Blad msgsnd msgrID (klient)");
-        exit(EXIT_FAILURE);
     }
+    
     printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    if(klient.basen){
+        msgr.mtype = 2;
+        if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
+            perror("Blad msgsnd msgrID (klient)");
+            exit(EXIT_FAILURE);
+        }
+    }
 
     return 0;
 }
