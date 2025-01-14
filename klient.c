@@ -83,7 +83,7 @@ int main() {
     do {
         if(!klient.basen){
             //nr_basenu = rand() % 3 + 1;
-            msgr.mtype = 1;
+            msgr.mtype = 2;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
                 perror("Blad msgsnd msgrID (klient)");
@@ -102,9 +102,17 @@ int main() {
                 sleep(rand() % 10 + 5);
             }
         }
+        else{
+            sleep(1);
+        }
     } while (time(NULL) < klient.czas_wyjscia);
 
-    printf("%s[%d]%s Czas wyjścia klienta osiągnięty: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
+    msgr.mtype = 1;
+    if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
+        perror("Blad msgsnd msgrID (klient)");
+        exit(EXIT_FAILURE);
+    }
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
 
     return 0;
 }

@@ -51,6 +51,8 @@ int main() {
             perror("Blad msgsnd msgID (kasjer)");
             exit(EXIT_FAILURE);
         }
+
+        sleep(rand() % 2 + 1);
     }
     return 0;
 }

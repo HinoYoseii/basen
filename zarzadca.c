@@ -1,7 +1,7 @@
 #include "utility.c"
 
 int msgID, msgrID;
-pid_t pid_kasjer, pid_ratownik;
+pid_t pid_kasjer, pid_ratownik[3];
 
 void koniec(int sig);
 
@@ -56,12 +56,12 @@ int main() {
     // printf("\n");
     char pool_id[10];
     for (int i = 0; i < 3; i++) {
-        pid_ratownik = fork();
+        pid_ratownik[i] = fork();
 
-        if (pid_ratownik == -1) {
+        if (pid_ratownik[i] == -1) {
             perror("Blad fork pid_ratownik (zarzadca)");
             exit(EXIT_FAILURE);
-        } else if (pid_ratownik == 0) {
+        } else if (pid_ratownik[i] == 0) {
             // Konwertuj numer basenu na string i przekaż jako argument do execl
             sprintf(pool_id, "%d", i + 1);
             execl("./ratownik", "ratownik", pool_id, NULL);
@@ -98,7 +98,7 @@ int main() {
             perror("Blad execl pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
         } else {
-            sleep(rand() % 2 + 1);
+            sleep(rand() % 5 + 1);
         }
     }
 
@@ -112,7 +112,9 @@ int main() {
         //printf("Proces klienta o PID %d zakończył się. Status: %d\n", finished_pid, WEXITSTATUS(status));
     }
 
-    kill(pid_ratownik, SIGTERM);
+    for(int i = 0; i < 3; i++){
+        kill(pid_ratownik[i], SIGTERM);
+    }
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);
@@ -122,7 +124,9 @@ int main() {
 }
 
 void koniec(int sig) {
-    kill(pid_ratownik, SIGTERM);
+    for(int i = 0; i < 3; i++){
+        kill(pid_ratownik[i], SIGTERM);
+    }
     kill(pid_kasjer, SIGTERM);
     msgctl(msgrID, IPC_RMID, NULL);
     msgctl(msgID, IPC_RMID, NULL);

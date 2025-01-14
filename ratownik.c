@@ -39,45 +39,61 @@ int main(int argc, char *argv[]) {
         }
 
         while (1) {
-            if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 1, 0) == -1) {
+            if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), -2, 0) == -1) {
                 perror("Blad msgrcv msgrID (ratownik)");
                 exit(EXIT_FAILURE);
             }
+            if(msgr.mtype == 1){
+                for(int i = 1; i <= X1; i++){
+                    if(msgr.mtype == klienci[i]){
+                        klienci[0]--;
+                        klienci[i] = 0;
+                        break;
+                    }
+                }
+            }
+            else{
+                 msgr.mtype = msgr.pid;
 
-            msgr.mtype = msgr.pid;
+                if(msgr.wiek >= 18){
+                    if(klienci[0] == 3){
+                        msgr.kom = 'n';
+                        if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
+                            perror("Blad msgsnd msgrID (klient)");
+                            exit(EXIT_FAILURE);
+                        }
 
-            if(msgr.wiek >= 18){
-                if(klienci[0] == 3){
-                    msgr.kom = 'n';
+                        printf("%s[%d]%s Nie ma miejsca na basenie olimpijskim.\n", YELLOW, msgr.pid, RESET);
+                    }
+                    else{
+                        for(int i = 1; i <= X1; i++){
+                            if(klienci[i] == 0){
+                                klienci[0]++;
+                                klienci[i] = msgr.pid;
+                                
+                                msgr.kom = 't';
+                                if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
+                                    perror("Blad msgsnd msgrID (klient)");
+                                    exit(EXIT_FAILURE);
+                                }
+
+                                local = czas();
+                                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu olimpijskiego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
+                                break;
+                            }
+                        }
+                    }
+                    
+                }
+                else{
+                    msgr.kom = 'w';
                     if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
                         perror("Blad msgsnd msgrID (klient)");
                         exit(EXIT_FAILURE);
                     }
 
-                    printf("%s[%d]%s Nie ma miejsca na basenie olimpijskim.\n", YELLOW, msgr.pid, RESET);
+                    printf("%s[%d]%s Kapiel w basenie olimpijskim od 18 roku życia. Wiek: %d\n", YELLOW, msgr.pid, RESET, msgr.wiek);
                 }
-                else{
-                    for(int i = 1; i <= X1; i++){
-                        if(klienci[i] == 0){
-                            klienci[0]++;
-                            klienci[i] == msgr.pid;
-                            local = czas();
-
-                            msgr.kom = 't';
-                            if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
-                                perror("Blad msgsnd msgrID (klient)");
-                                exit(EXIT_FAILURE);
-                            }
-
-                            printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu olimpijskiego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
-                            break;
-                        }
-                    }
-                }
-                
-            }
-            else{
-                printf("%s[%d]%s Kapiel w basenie olimpijskim od 18 roku życia. Wiek: %d\n", YELLOW, msgr.pid, RESET, msgr.wiek);
             }
             
             continue;
