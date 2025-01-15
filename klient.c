@@ -1,7 +1,7 @@
 #include "utility.c"
 
 int main() {
-    srand(time(NULL));
+    srand(getpid());
     time_t now;
     struct tm *local;
     struct tm *wyjscie;
@@ -40,12 +40,11 @@ int main() {
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
         
     klient.pid = getpid();
-    //klient.wiek = 20;
     klient.wiek = (rand() % 70) + 1;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
-    msg.pid = getpid();
+    msg.pid = klient.pid;
     msg.mtype = vip;
     msg.wiek = klient.wiek;
     msg.czas_wyjscia = 0;
@@ -111,7 +110,7 @@ int main() {
                 else if(msgr.kom == 's'){
                     printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), nr_basenu, RESET);
                 }
-                sleep(5);
+                sleep((rand() % 20) + 1);
             }
         }
         else{
@@ -119,13 +118,16 @@ int main() {
         }
     }
     
-    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
     if(klient.basen){
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
         msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
             perror("Blad msgsnd msgrID (klient)");
             exit(EXIT_FAILURE);
         }
+    }
+    else{
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     }
 
     return 0;

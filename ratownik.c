@@ -188,8 +188,8 @@ void *olimpijski(void *arg) {
                     break;
                 }
             }
-            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-            wyswietl_klientow(klienci, X1 + 1);
+            // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+            // wyswietl_klientow(klienci, X1 + 1);
         }
         
 
@@ -254,16 +254,16 @@ void *rekreacyjny(void *arg){
                     }
                     msgr.kom = 't';
 
-                    printf("\nStan tablicy klienci REKREACYJNY:\n");
-                    printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                    for (int i = 1; i <= X2; i++) {
-                        if (klienci[0][i] == 0) {
-                            printf("Miejsce %d: PUSTE\n", i);
-                        } else {
-                            printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
-                        }
-                    }
-                    printf("\n");
+                    // printf("\nStan tablicy klienci REKREACYJNY:\n");
+                    // printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                    // for (int i = 1; i <= X2; i++) {
+                    //     if (klienci[0][i] == 0) {
+                    //         printf("Miejsce %d: PUSTE\n", i);
+                    //     } else {
+                    //         printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                    //     }
+                    // }
+                    // printf("\n");
 
                     break;
                 }
@@ -305,8 +305,8 @@ void *brodzik(void *arg) {
                     break;
                 }
             }
-            printf("\nStan tablicy klienci BRODZIK:\n");
-            wyswietl_klientow(klienci, (X3/2 + 1));
+            // printf("\nStan tablicy klienci BRODZIK:\n");
+            // wyswietl_klientow(klienci, (X3/2 + 1));
         }
         
         pthread_mutex_unlock(&mutex_brodzik);
@@ -343,8 +343,8 @@ void *wychodzenie_olimpijski(void *arg) {
             }
         }
         // printf("Po zablokowaniu");
-        printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-        wyswietl_klientow(klienci, X1 + 1);
+        // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+        // wyswietl_klientow(klienci, X1 + 1);
 
         pthread_mutex_unlock(&mutex_olimpijski);
     }
@@ -374,16 +374,16 @@ void *wychodzenie_rekreacyjny(void *arg){
                     klienci[0][0]--;
                 }
 
-                printf("\nStan tablicy klienci REKREACYJNY:\n");
-                    printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                    for (int i = 1; i <= X2; i++) {
-                        if (klienci[0][i] == 0) {
-                            printf("Miejsce %d: PUSTE\n", i);
-                        } else {
-                            printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
-                        }
-                    }
-                    printf("\n");
+                // printf("\nStan tablicy klienci REKREACYJNY:\n");
+                //     printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                //     for (int i = 1; i <= X2; i++) {
+                //         if (klienci[0][i] == 0) {
+                //             printf("Miejsce %d: PUSTE\n", i);
+                //         } else {
+                //             printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                //         }
+                //     }
+                //     printf("\n");
                 break;
             }
         }
@@ -418,9 +418,9 @@ void *wychodzenie_brodzik(void *arg){
                 break;
             }
         }
-        // printf("Po zablokowaniu");
-        printf("\nStan tablicy klienci BRODZIK:\n");
-        wyswietl_klientow(klienci, (X3/2 + 1));
+        // // printf("Po zablokowaniu");
+        // printf("\nStan tablicy klienci BRODZIK:\n");
+        // wyswietl_klientow(klienci, (X3/2 + 1));
 
         pthread_mutex_unlock(&mutex_brodzik);
     }

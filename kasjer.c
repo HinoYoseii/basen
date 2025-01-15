@@ -19,7 +19,7 @@ int main() {
     }
 
     local = czas();
-    printf("%s[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...%s\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    printf("[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
     sleep(5);
 
     while (1) { 
@@ -35,7 +35,7 @@ int main() {
         if (msg.mtype == 2){
             printf("%s[%02d:%02d:%02d  %d]%s Kasjer obsługuje klienta.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
-
+        
         local = czas();
         if(msg.wiek < 10){
             printf("%s[%02d:%02d:%02d  %d]%s Opiekun płaci za bilet. Dziecko nie płaci za bilet. Wiek: %d\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET, msg.wiek);
@@ -44,15 +44,13 @@ int main() {
             printf("%s[%02d:%02d:%02d  %d]%s Klient płaci za bilet.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
 
-        msg.czas_wyjscia = time(NULL) + 10;
+        msg.czas_wyjscia = time(NULL) + 60;
         msg.mtype = msg.pid;
 
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
             perror("Blad msgsnd msgID (kasjer)");
             exit(EXIT_FAILURE);
         }
-
-        sleep(rand() % 2 + 1);
     }
     return 0;
 }
