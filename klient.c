@@ -40,8 +40,8 @@ int main() {
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
         
     klient.pid = getpid();
-    klient.wiek = 20;
-    //klient.wiek = (rand() % 70) + 11;
+    //klient.wiek = 20;
+    klient.wiek = (rand() % 70) + 1;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
@@ -83,7 +83,7 @@ int main() {
     
     while (time(NULL) < klient.czas_wyjscia){
         if(!klient.basen){
-            nr_basenu = 2;
+            nr_basenu = rand() % 3 + 1;
             msgr.mtype = nr_basenu;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
@@ -98,18 +98,18 @@ int main() {
 
             if(msgr.kom == 't'){
                 local = czas();
-                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
+                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET, nr_basenu);
                 klient.basen = nr_basenu;
             }
             else{
                 if(msgr.kom == 'w'){
-                    printf("%s[%d]%s Klient nie został wpuszczony przez wiek: %d.\n", YELLOW, getpid(), RESET, klient.wiek);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez wiek: %d.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
                 }
                 else if(msgr.kom == 'n'){
-                    printf("%s[%d]%s Klient nie został wpuszczony przez pełny basen.\n", YELLOW, getpid(), RESET);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez pełny basen.\n", YELLOW, getpid(), nr_basenu, RESET);
                 }
                 else if(msgr.kom == 's'){
-                    printf("%s[%d]%s Klient nie został wpuszczony przez srednia wieku.\n", YELLOW, getpid(), RESET);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), nr_basenu, RESET);
                 }
                 sleep(5);
             }
@@ -119,8 +119,8 @@ int main() {
         }
     }
     
-    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
-    if(klient.basen == 1){
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
+    if(klient.basen){
         msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
             perror("Blad msgsnd msgrID (klient)");

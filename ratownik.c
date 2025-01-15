@@ -188,6 +188,7 @@ void *olimpijski(void *arg) {
                     break;
                 }
             }
+            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
             wyswietl_klientow(klienci, X1 + 1);
         }
         
@@ -253,7 +254,7 @@ void *rekreacyjny(void *arg){
                     }
                     msgr.kom = 't';
 
-                    printf("\nStan tablicy klienci:\n");
+                    printf("\nStan tablicy klienci REKREACYJNY:\n");
                     printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
                     for (int i = 1; i <= X2; i++) {
                         if (klienci[0][i] == 0) {
@@ -287,10 +288,9 @@ void *brodzik(void *arg) {
             perror("Blad msgrcv msgrID (ratownik)");
             pthread_exit(NULL);
         }
-        printf("huh\n");
-        msgr.mtype = msgr.pid;
-
+        
         pthread_mutex_lock(&mutex_brodzik);
+        msgr.mtype = msgr.pid;
 
         if (msgr.wiek > 5) {
             msgr.kom = 'w';
@@ -305,6 +305,7 @@ void *brodzik(void *arg) {
                     break;
                 }
             }
+            printf("\nStan tablicy klienci BRODZIK:\n");
             wyswietl_klientow(klienci, (X3/2 + 1));
         }
         
@@ -342,7 +343,8 @@ void *wychodzenie_olimpijski(void *arg) {
             }
         }
         // printf("Po zablokowaniu");
-        // wyswietl_klientow(klienci, X1 + 1);
+        printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+        wyswietl_klientow(klienci, X1 + 1);
 
         pthread_mutex_unlock(&mutex_olimpijski);
     }
@@ -352,7 +354,41 @@ void *wychodzenie_olimpijski(void *arg) {
 
 void *wychodzenie_rekreacyjny(void *arg){
     while(1){
-        continue;
+        int (*klienci)[X2 + 1] = (int (*)[X2 + 1])arg;
+
+        if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 5, 0) == -1) {
+            perror("Blad msgrcv msgrID (ratownik)");
+            pthread_exit(NULL);
+        }
+
+        pthread_mutex_lock(&mutex_rekreacyjny);
+
+        for(int i = 1; i <= X2; i++){
+            if(klienci[0][i] == msgr.pid){
+                klienci[0][i] = 0;
+                klienci[1][i] = 0;
+                if(msgr.wiek_opiekuna > 0){
+                    klienci[0][0] -= 2;
+                }
+                else{
+                    klienci[0][0]--;
+                }
+
+                printf("\nStan tablicy klienci REKREACYJNY:\n");
+                    printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                    for (int i = 1; i <= X2; i++) {
+                        if (klienci[0][i] == 0) {
+                            printf("Miejsce %d: PUSTE\n", i);
+                        } else {
+                            printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                        }
+                    }
+                    printf("\n");
+                break;
+            }
+        }
+
+        pthread_mutex_unlock(&mutex_rekreacyjny);
     }
     pthread_exit(NULL);
 
@@ -383,7 +419,8 @@ void *wychodzenie_brodzik(void *arg){
             }
         }
         // printf("Po zablokowaniu");
-        // wyswietl_klientow(klienci, (X3/2 + 1));
+        printf("\nStan tablicy klienci BRODZIK:\n");
+        wyswietl_klientow(klienci, (X3/2 + 1));
 
         pthread_mutex_unlock(&mutex_brodzik);
     }
@@ -392,7 +429,6 @@ void *wychodzenie_brodzik(void *arg){
 }
 
 void wyswietl_klientow(int *klienci, int rozmiar) {
-    printf("\nStan tablicy klienci:\n");
     printf("Liczba klientów na basenie: %d\n", klienci[0]);
     for (int i = 1; i < rozmiar; i++) {
         if (klienci[i] == 0) {

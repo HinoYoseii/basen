@@ -89,7 +89,7 @@ int main() {
     printf("\n");
     
     //uruchomienie klientów
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 20; i++) {
         pid_t pid_klient = fork();
 
         if (pid_klient == -1) {
@@ -106,7 +106,7 @@ int main() {
         }
     }
 
-    for (int i = 0; i < 6; i++) {
+    for (int i = 0; i < 20; i++) {
         int status;
         pid_t finished_pid = wait(&status);
         if (finished_pid == -1) {
