@@ -20,7 +20,7 @@
 #define MAX_CLIENTS 100
 #define X1 3 // olimpijski
 #define X2 4 // rekreacyjny
-#define X3 2 // brodzik
+#define X3 4 // brodzik
 
 const char *RESET = "\033[0m";
 const char *RED = "\033[31m";

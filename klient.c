@@ -40,7 +40,8 @@ int main() {
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
         
     klient.pid = getpid();
-    klient.wiek = (rand() % 70) + 1;
+    klient.wiek = 20;
+    //klient.wiek = (rand() % 70) + 11;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
@@ -82,8 +83,8 @@ int main() {
     
     while (time(NULL) < klient.czas_wyjscia){
         if(!klient.basen){
-            //nr_basenu = rand() % 3 + 1;
-            msgr.mtype = 1;
+            nr_basenu = 2;
+            msgr.mtype = nr_basenu;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
                 perror("Blad msgsnd msgrID (klient)");
@@ -97,8 +98,8 @@ int main() {
 
             if(msgr.kom == 't'){
                 local = czas();
-                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu olimpijskiego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
-                klient.basen = 1;
+                printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET);
+                klient.basen = nr_basenu;
             }
             else{
                 if(msgr.kom == 'w'){
@@ -106,6 +107,9 @@ int main() {
                 }
                 else if(msgr.kom == 'n'){
                     printf("%s[%d]%s Klient nie został wpuszczony przez pełny basen.\n", YELLOW, getpid(), RESET);
+                }
+                else if(msgr.kom == 's'){
+                    printf("%s[%d]%s Klient nie został wpuszczony przez srednia wieku.\n", YELLOW, getpid(), RESET);
                 }
                 sleep(5);
             }
@@ -116,8 +120,8 @@ int main() {
     }
     
     printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
-    if(klient.basen){
-        msgr.mtype = 2;
+    if(klient.basen == 1){
+        msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
             perror("Blad msgsnd msgrID (klient)");
             exit(EXIT_FAILURE);

@@ -89,7 +89,7 @@ int main() {
     printf("\n");
     
     //uruchomienie klientów
-    for (int i = 0; i < MAX_PROCESSES; i++) {
+    for (int i = 0; i < 6; i++) {
         pid_t pid_klient = fork();
 
         if (pid_klient == -1) {
@@ -101,11 +101,12 @@ int main() {
             perror("Blad execl pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
         } else {
-            sleep(rand() % 5 + 1);
+            sleep(5);
+            // sleep(rand() % 5 + 1);
         }
     }
 
-    for (int i = 0; i < MAX_PROCESSES + 2; i++) {
+    for (int i = 0; i < 6; i++) {
         int status;
         pid_t finished_pid = wait(&status);
         if (finished_pid == -1) {
