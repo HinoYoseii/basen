@@ -8,7 +8,8 @@ void clean();
 
 int main() {
     srand(time(NULL));
-
+    time_t zamkniecie;
+    zamkniecie = time(NULL) + DLUGOSC_OTWARCIA;
     struct sigaction act;
     act.sa_handler = koniec;
     sigemptyset(&act.sa_mask);
@@ -87,11 +88,11 @@ int main() {
     }
     sleep(3);
     printf("\n");
-    
+    int dzieci = 0;
     //uruchomienie klientów
-    for (int i = 0; i < 10; i++) {
+    while (time(NULL) < zamkniecie) {
         pid_t pid_klient = fork();
-
+    
         if (pid_klient == -1) {
             perror("Blad fork pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
@@ -100,13 +101,33 @@ int main() {
             execl("./klient", "klient", NULL);
             perror("Blad execl pid_klient (zarzadca)");
             exit(EXIT_FAILURE);
+            
         } else {
-            continue;
-            //sleep(rand() % 15 + 1);
+            // continue;
+            dzieci++;
+            sleep(rand() % 10 + 1);
         }
     }
-
-    for (int i = 0; i < 10; i++) {
+    // for (int i = 0; i < 5; i++) {
+    //     pid_t pid_klient = fork();
+    
+    //     if (pid_klient == -1) {
+    //         perror("Blad fork pid_klient (zarzadca)");
+    //         exit(EXIT_FAILURE);
+    //     } else if (pid_klient == 0) {
+    //         // Proces potomny - uruchom klienta
+    //         execl("./klient", "klient", NULL);
+    //         perror("Blad execl pid_klient (zarzadca)");
+    //         exit(EXIT_FAILURE);
+            
+    //     } else {
+    //         // continue;
+    //         dzieci++;
+    //         sleep(rand() % 15 + 1);
+    //     }
+    // }
+    printf("dzieci: %d\n", dzieci);
+    for (int i = 0; i < dzieci; i++) {
         int status;
         pid_t finished_pid = wait(&status);
         if (finished_pid == -1) {

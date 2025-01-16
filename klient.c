@@ -60,7 +60,7 @@ int main() {
     }
 
     local = czas();
-    printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na basen.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na kompleks basenowy.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
 
     if(klient.wiek <= 3){
         local = czas();
@@ -79,8 +79,8 @@ int main() {
     msgr.pid = getpid();
     msgr.wiek = klient.wiek;
     msgr.wiek_opiekuna = klient.wiek_opiekuna;
-    
-    while (time(NULL) < klient.czas_wyjscia){
+    int spanie;
+    while (1){
         if(!klient.basen){
             nr_basenu = rand() % 3 + 1;
             msgr.mtype = nr_basenu;
@@ -89,6 +89,8 @@ int main() {
                 perror("Blad msgsnd msgrID (klient)");
                 exit(EXIT_FAILURE);
             }
+            local = czas();
+            printf("%s[%02d:%02d:%02d  %d]%s Klient chce wejść do basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET, nr_basenu);
 
             if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), getpid(), 0) == -1) {
                 perror("Blad msgrcv msgrID (klient)");
@@ -99,6 +101,7 @@ int main() {
                 local = czas();
                 printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi do basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET, nr_basenu);
                 klient.basen = nr_basenu;
+                spanie = 1;
             }
             else{
                 if(msgr.kom == 'w'){
@@ -110,16 +113,22 @@ int main() {
                 else if(msgr.kom == 's'){
                     printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), nr_basenu, RESET);
                 }
-                sleep((rand() % 20) + 1);
+                spanie = ((rand() % 20) + 1);
             }
         }
-        else{
-            sleep(1);
+        for(int i = 0; i < spanie; i++){
+            if(time(NULL) < klient.czas_wyjscia)
+                sleep(1);
+            else
+                break;
         }
+        if(time(NULL) >= klient.czas_wyjscia)
+            break;
     }
     
     if(klient.basen){
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
+        local = czas();
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
         msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
             perror("Blad msgsnd msgrID (klient)");
@@ -127,7 +136,8 @@ int main() {
         }
     }
     else{
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+        local = czas();
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     }
 
     return 0;

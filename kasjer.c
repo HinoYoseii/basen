@@ -19,8 +19,7 @@ int main() {
     }
 
     local = czas();
-    printf("[%02d:%02d:%02d  %d] Kasjer: Oczekiwanie na komunikaty...\n", local->tm_hour, local->tm_min, local->tm_sec, getpid());
-    sleep(5);
+    printf("Kasjer [%d]: Oczekiwanie na komunikaty...\n", getpid());
 
     while (1) { 
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
@@ -44,7 +43,7 @@ int main() {
             printf("%s[%02d:%02d:%02d  %d]%s Klient płaci za bilet.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
 
-        msg.czas_wyjscia = time(NULL) + 60;
+        msg.czas_wyjscia = time(NULL) + 10;
         msg.mtype = msg.pid;
 
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
