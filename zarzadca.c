@@ -8,8 +8,6 @@ void clean();
 
 int main() {
     srand(time(NULL));
-    time_t zamkniecie;
-    zamkniecie = time(NULL) + DLUGOSC_OTWARCIA;
     struct sigaction act;
     act.sa_handler = koniec;
     sigemptyset(&act.sa_mask);
@@ -18,6 +16,7 @@ int main() {
     
     pid_t pid;
     key_t msg_key, msg_key2;
+    time_t zamkniecie = time(NULL) + DLUGOSC_OTWARCIA;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -105,7 +104,7 @@ int main() {
         } else {
             // continue;
             dzieci++;
-            sleep(rand() % 10 + 1);
+            sleep(rand() % 6 + 1);
         }
     }
     // for (int i = 0; i < 5; i++) {

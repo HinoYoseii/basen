@@ -1,6 +1,17 @@
 #include "utility.c"
 
+void signal_handler(int signal_num);
+struct klient_dane klient;
+
 int main() {
+    struct sigaction sa;
+    sa.sa_handler = signal_handler;
+    sa.sa_flags = 0; // Możesz dodać SA_RESTART, jeśli potrzeba
+    sigemptyset(&sa.sa_mask);
+
+    sigaction(SIGUSR1, &sa, NULL);
+    sigaction(SIGUSR2, &sa, NULL);
+
     srand(getpid());
     time_t now;
     struct tm *local;
@@ -10,7 +21,8 @@ int main() {
     key_t msg_key, msg2_key;
     struct msgbuf msg;
     struct msgbuf_r msgr;
-    struct klient_dane klient;
+
+    
 
     if ((msg_key = ftok(".", 'M')) == -1) {
         printf("Blad ftok A (klient)");
@@ -82,7 +94,8 @@ int main() {
     int spanie;
     while (1){
         if(!klient.basen){
-            nr_basenu = rand() % 3 + 1;
+            nr_basenu = 1;
+            //nr_basenu = rand() % 3 + 1;
             msgr.mtype = nr_basenu;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
@@ -104,7 +117,10 @@ int main() {
                 spanie = 1;
             }
             else{
-                if(msgr.kom == 'w'){
+                if(msgr.kom == 'c'){
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d ponieważ basen jest tymczasowo nieczynny.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
+                }
+                else if(msgr.kom == 'w'){
                     printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez wiek: %d.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
                 }
                 else if(msgr.kom == 'n'){
@@ -126,8 +142,8 @@ int main() {
             break;
     }
     
+    local = czas();
     if(klient.basen){
-        local = czas();
         printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
         msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
@@ -135,10 +151,18 @@ int main() {
             exit(EXIT_FAILURE);
         }
     }
-    else{
-        local = czas();
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
-    }
+    
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
 
     return 0;
+}
+
+void signal_handler(int signal_num){
+    if(signal_num == SIGUSR1){
+        printf("%s[%d]%s Klient odebral sygnal 1 Wychodzi z basenu nr.%d.\n", RED, getpid(), RESET, klient.basen);
+        klient.basen = 0;
+    }
+    else if (signal_num == SIGUSR2) {
+        printf("%s[%d]%s Klient odebrał sygnał 2.\n", RED, getpid(), RESET);
+    }
 }

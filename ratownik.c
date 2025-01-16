@@ -8,10 +8,12 @@
 #include <time.h>
 
 pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik;
-pthread_t t_wpuszczanie, t_wychodzenie;
+pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;
 struct msgbuf_r msgr;
 int msgrID, pool_id;
 key_t msg2_key;
+int czynny = 1;
+struct tm *local;
 
 // Funkcje wątków
 void *olimpijski(void *arg);
@@ -22,6 +24,7 @@ void *wychodzenie_rekreacyjny(void *arg);
 void *wychodzenie_brodzik(void *arg);
 void wyswietl_klientow(int *klienci, int rozmiar);
 double suma_wieku(int klienci[2][X2+1], int liczba_klientow);
+void* sygnal(void *arg);
 
 int main(int argc, char *argv[]) {
     if (argc < 2) {
@@ -29,6 +32,7 @@ int main(int argc, char *argv[]) {
         exit(EXIT_FAILURE);
     }
 
+    srand(getpid());
     pool_id = atoi(argv[1]);
 
     if ((msg2_key = ftok(".", 'R')) == -1) {
@@ -66,11 +70,19 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
+        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
+            perror("pthread_create - wątek wychodzenia");
+            exit(EXIT_FAILURE);
+        }
+
         // Oczekiwanie na zakończenie wątków
         if (pthread_join(t_wpuszczanie, NULL) != 0) {
             perror("pthread_join - wątek wpuszczania");
         }
         if (pthread_join(t_wychodzenie, NULL) != 0) {
+            perror("pthread_join - wątek wychodzenia");
+        }
+        if (pthread_join(t_sygnaly, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
 
@@ -174,8 +186,10 @@ void *olimpijski(void *arg) {
 
         pthread_mutex_lock(&mutex_olimpijski);
         msgr.mtype = msgr.pid;
-
-        if (msgr.wiek < 18) {
+        if(!czynny){
+            msgr.kom = 'c';
+        }
+        else if (msgr.wiek < 18) {
             msgr.kom = 'w';
         } else if (klienci[0] >= X1) {
             msgr.kom = 'n';
@@ -235,7 +249,9 @@ void *rekreacyjny(void *arg){
 
         //printf("suma_wieku: %f\n", srednia);
         //srednia = (srednia + wiek_klienta) / (klienci[0][0] + liczba_osob);
-
+        if(!czynny){
+            msgr.kom = 'c';
+        }
         if (klienci[0][0] >= (X2 - liczba_osob)) {
             msgr.kom = 'n';
         } else if (srednia > 40) {
@@ -291,7 +307,10 @@ void *brodzik(void *arg) {
         
         pthread_mutex_lock(&mutex_brodzik);
         msgr.mtype = msgr.pid;
-
+        
+        if(!czynny){
+            msgr.kom = 'c';
+        }
         if (msgr.wiek > 5) {
             msgr.kom = 'w';
         } else if (klienci[0] >= X3) {
@@ -450,3 +469,52 @@ double suma_wieku(int klienci[2][X2+1], int liczba_klientow) {
     return suma;
 }
 
+void* sygnal(void *arg){
+    int *klienci = (int *)arg;
+    time_t send_signal1 = time(NULL) + 10;
+
+    // while(time(NULL) < ){
+        while (time(NULL) < send_signal1) {
+            sleep(1); // Oczekuj sekundę, zanim ponownie sprawdzisz warunek
+        }
+
+        if(pool_id == 1){
+            int byli_klienci[X1];
+            for(int i = 0; i < X1; i++){
+                byli_klienci[i] = 0;
+            }
+
+            
+            pthread_mutex_lock(&mutex_olimpijski);
+            local = czas();
+            printf("%s[%02d:%02d:%02d  %d]%s RATOWNIK WYSYŁA SYGNAŁ NA WYJŚCIE Z BASENU OLIMPIJSKIEGO.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, pool_id, RESET);
+            czynny = 0;
+
+            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+            wyswietl_klientow(klienci, X1 + 1);
+            
+            for (int i = 1; i <= X1; i++) {
+                if(klienci[i]){
+                    printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[i]);
+                    kill(klienci[i], SIGUSR1);
+                    byli_klienci[i - 1] = klienci[i];
+                    klienci[i] = 0;
+                    klienci[0]--;
+                }
+            }
+            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+            wyswietl_klientow(klienci, X1 + 1);
+
+            for (int i = 0; i < X1; i++) {
+                if (byli_klienci[i] == 0) {
+                    printf("Miejsce %d: PUSTE\n", i);
+                } else {
+                    printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
+                }
+            }
+
+            pthread_mutex_unlock(&mutex_olimpijski);
+        }
+        //break;
+    //}
+}
