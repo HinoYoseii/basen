@@ -1,16 +1,10 @@
 #include "utility.c"
-#include <pthread.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/ipc.h>
-#include <sys/msg.h>
-#include <time.h>
+#include "utility.h"
 
 pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik;
 pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;
 struct msgbuf_r msgr;
-int msgrID, pool_id;
+int msgrID, pool_id, pool_size;
 key_t msgr_key;
 int czynny = 1;
 struct tm *local;
@@ -23,29 +17,31 @@ void *wychodzenie_olimpijski(void *arg);
 void *wychodzenie_rekreacyjny(void *arg);
 void *wychodzenie_brodzik(void *arg);
 void wyswietl_klientow(int *klienci, int rozmiar);
-double suma_wieku(int klienci[2][X2+1], int liczba_klientow);
+double suma_wieku(int klienci[2][pool_size+1], int liczba_klientow);
 void* sygnal(void *arg);
 
 int main(int argc, char *argv[]) {
-    if (argc < 2) {
+    if (argc < 3) {
         fprintf(stderr, "Blad: Brak identyfikatora basenu\n");
         exit(EXIT_FAILURE);
     }
 
     srand(getpid());
     pool_id = atoi(argv[1]);
+    pool_size = atoi(argv[2]);
+    //printf("Wartość X%d: %d\n", pool_id, pool_size);
 
     msgr_key = ftok(".", 'R');
     sprawdz_blad(msgr_key, "ftok R (klient)");
     msgrID = msgget(msgr_key, IPC_CREAT | 0666);
     sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
 
-    printf("%sRatownik [%d]%s Obsługuje basen %d\n", MAGENTA, getpid(), RESET, pool_id);
+    printf("%sRatownik [%d]%s Obsługuje basen %d o rozmiarze %d\n", MAGENTA, getpid(), RESET, pool_id, pool_size);
 
     if (pool_id == 1) {
         // Inicjalizacja danych
-        int klienci[X1 + 1];
-        for (int i = 0; i <= X1; i++) {
+        int klienci[pool_size + 1];
+        for (int i = 0; i <= pool_size; i++) {
             klienci[i] = 0;
         }
 
@@ -89,8 +85,8 @@ int main(int argc, char *argv[]) {
         }
     }
     else if(pool_id == 2){
-        int klienci[2][X2 + 1];
-        for (int i = 0; i <= X2; i++) {
+        int klienci[2][pool_size + 1];
+        for (int i = 0; i <= pool_size; i++) {
             klienci[0][i] = 0;
             klienci[1][i] = 0;
         }
@@ -138,11 +134,11 @@ int main(int argc, char *argv[]) {
     }
     else if(pool_id == 3){
 
-        int klienci[(X3 / 2) + 1];
-        for (int i = 0; i <= (X3/2); i++) {
+        int klienci[(pool_size / 2) + 1];
+        for (int i = 0; i <= (pool_size/2); i++) {
             klienci[i] = 0;
         }
-        // for (int i = 0; i <= (X3/2); i++) {
+        // for (int i = 0; i <= (pool_size/2); i++) {
         //     printf("%d - %d\n",i ,klienci[i]);
         // }
 
@@ -206,10 +202,10 @@ void *olimpijski(void *arg) {
         }
         else if (msgr.wiek < 18) {
             msgr.kom = 'w';
-        } else if (klienci[0] >= X1) {
+        } else if (klienci[0] >= pool_size) {
             msgr.kom = 'n';
         } else {
-            for (int i = 1; i <= X1; i++) {
+            for (int i = 1; i <= pool_size; i++) {
                 if (klienci[i] == 0) {
                     klienci[i] = msgr.pid;
                     klienci[0]++;
@@ -218,7 +214,7 @@ void *olimpijski(void *arg) {
                 }
             }
             // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-            // wyswietl_klientow(klienci, X1 + 1);
+            // wyswietl_klientow(klienci, pool_size + 1);
         }
         
 
@@ -233,7 +229,7 @@ void *olimpijski(void *arg) {
 }
 
 void *rekreacyjny(void *arg){
-    int (*klienci)[X2 + 1] = (int (*)[X2 + 1])arg;
+    int (*klienci)[pool_size + 1] = (int (*)[pool_size + 1])arg;
 
     while(1){
         if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 2, 0) == -1) {
@@ -248,7 +244,7 @@ void *rekreacyjny(void *arg){
         int liczba_osob = 0;
         double srednia = 0;
 
-        for(int i = 1; i <= X2; i++){
+        for(int i = 1; i <= pool_size; i++){
             //printf("%d. %d\n", i ,klienci[1][i]);
             srednia += klienci[1][i];
         }
@@ -267,13 +263,13 @@ void *rekreacyjny(void *arg){
         if(!czynny){
             msgr.kom = 'c';
         }
-        else if (klienci[0][0] >= (X2 - liczba_osob)) {
+        else if (klienci[0][0] >= (pool_size - liczba_osob)) {
             msgr.kom = 'n';
         } else if (srednia > 40) {
            //printf("srednia: %f\n", srednia);
             msgr.kom = 's';
         } else {
-            for (int i = 1; i <= X2; i++) {
+            for (int i = 1; i <= pool_size; i++) {
                 if (klienci[0][i] == 0) {
                     klienci[0][i] = msgr.pid;
                     klienci[1][i] = wiek_klienta;
@@ -287,7 +283,7 @@ void *rekreacyjny(void *arg){
 
                     // printf("\nStan tablicy klienci REKREACYJNY:\n");
                     // printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                    // for (int i = 1; i <= X2; i++) {
+                    // for (int i = 1; i <= pool_size; i++) {
                     //     if (klienci[0][i] == 0) {
                     //         printf("Miejsce %d: PUSTE\n", i);
                     //     } else {
@@ -327,10 +323,10 @@ void *brodzik(void *arg) {
         }
         else if (msgr.wiek > 5) {
             msgr.kom = 'w';
-        } else if (klienci[0] >= X3) {
+        } else if (klienci[0] >= pool_size) {
             msgr.kom = 'n';
         } else {
-            for (int i = 1; i <= (X3/2 + 1); i++) {
+            for (int i = 1; i <= (pool_size/2 + 1); i++) {
                 if (klienci[i] == 0) {
                     klienci[i] = msgr.pid;
                     klienci[0] += 2;
@@ -338,8 +334,8 @@ void *brodzik(void *arg) {
                     break;
                 }
             }
-            printf("\nStan tablicy klienci BRODZIK:\n");
-            wyswietl_klientow(klienci, (X3/2 + 1));
+            // printf("\nStan tablicy klienci BRODZIK:\n");
+            // wyswietl_klientow(klienci, (pool_size/2 + 1));
         }
         
         pthread_mutex_unlock(&mutex_brodzik);
@@ -362,12 +358,12 @@ void *wychodzenie_olimpijski(void *arg) {
         }
 
         // printf("Przed zablokowaniem");
-        // wyswietl_klientow(klienci, X1 + 1);
+        // wyswietl_klientow(klienci, pool_size + 1);
 
         pthread_mutex_lock(&mutex_olimpijski);
 
         //printf("KLIENT %d\n", msgr.pid);
-        for (int i = 1; i <= X1; i++) {
+        for (int i = 1; i <= pool_size; i++) {
             if (klienci[i] == msgr.pid) {
                 klienci[i] = 0;
                 klienci[0]--;
@@ -377,7 +373,7 @@ void *wychodzenie_olimpijski(void *arg) {
         }
         // printf("Po zablokowaniu");
         // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-        // wyswietl_klientow(klienci, X1 + 1);
+        // wyswietl_klientow(klienci, pool_size + 1);
 
         pthread_mutex_unlock(&mutex_olimpijski);
     }
@@ -387,7 +383,7 @@ void *wychodzenie_olimpijski(void *arg) {
 
 void *wychodzenie_rekreacyjny(void *arg){
     while(1){
-        int (*klienci)[X2 + 1] = (int (*)[X2 + 1])arg;
+        int (*klienci)[pool_size + 1] = (int (*)[pool_size + 1])arg;
 
         if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 5, 0) == -1) {
             perror("Blad msgrcv msgrID (ratownik)");
@@ -396,7 +392,7 @@ void *wychodzenie_rekreacyjny(void *arg){
 
         pthread_mutex_lock(&mutex_rekreacyjny);
 
-        for(int i = 1; i <= X2; i++){
+        for(int i = 1; i <= pool_size; i++){
             if(klienci[0][i] == msgr.pid){
                 klienci[0][i] = 0;
                 klienci[1][i] = 0;
@@ -409,7 +405,7 @@ void *wychodzenie_rekreacyjny(void *arg){
 
                 // printf("\nStan tablicy klienci REKREACYJNY:\n");
                 //     printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                //     for (int i = 1; i <= X2; i++) {
+                //     for (int i = 1; i <= pool_size; i++) {
                 //         if (klienci[0][i] == 0) {
                 //             printf("Miejsce %d: PUSTE\n", i);
                 //         } else {
@@ -438,12 +434,12 @@ void *wychodzenie_brodzik(void *arg){
         }
 
         // printf("Przed zablokowaniem");
-        // wyswietl_klientow(klienci, (X3/2 + 1));
+        // wyswietl_klientow(klienci, (pool_size/2 + 1));
 
         pthread_mutex_lock(&mutex_brodzik);
 
         //printf("KLIENT %d\n", msgr.pid);
-        for (int i = 1; i <= (X3/2); i++) {
+        for (int i = 1; i <= (pool_size/2); i++) {
             if (klienci[i] == msgr.pid) {
                 klienci[i] = 0;
                 klienci[0] -= 2;
@@ -453,7 +449,7 @@ void *wychodzenie_brodzik(void *arg){
         }
         // // printf("Po zablokowaniu");
         // printf("\nStan tablicy klienci BRODZIK:\n");
-        // wyswietl_klientow(klienci, (X3/2 + 1));
+        // wyswietl_klientow(klienci, (pool_size/2 + 1));
 
         pthread_mutex_unlock(&mutex_brodzik);
     }
@@ -473,7 +469,7 @@ void wyswietl_klientow(int *klienci, int rozmiar) {
     printf("\n");
 }
 
-double suma_wieku(int klienci[2][X2+1], int liczba_klientow) {
+double suma_wieku(int klienci[2][pool_size+1], int liczba_klientow) {
     double suma = 0;
 
     for (int i = 1; i <= liczba_klientow; i++) {
@@ -488,7 +484,7 @@ void* sygnal(void *arg){
 
     pthread_mutex_t *mutex = (pool_id == 1) ? &mutex_olimpijski : (pool_id == 2) ? &mutex_rekreacyjny : &mutex_brodzik;
 
-    int rozmiar = (pool_id == 1 ? X1 : (pool_id == 2 ? X2 : (X3/2)));
+    int rozmiar = (pool_id == 1 ? pool_size : (pool_id == 2 ? pool_size : (pool_size/2)));
     int byli_klienci[rozmiar];
     for(int i = 0; i < rozmiar; i++)
         byli_klienci[i] = 0;
@@ -506,7 +502,7 @@ void* sygnal(void *arg){
     czynny = 0;
 
     if(pool_id == 2){
-        int (*klienci)[X2 + 1] = (int (*)[X2 + 1])arg;
+        int (*klienci)[pool_size + 1] = (int (*)[pool_size + 1])arg;
         klienci[0][0] = 0;
         for (int i = 1; i <= rozmiar; i++) {
             if(klienci[0][i]){
@@ -531,9 +527,9 @@ void* sygnal(void *arg){
     }
    
     // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-    // wyswietl_klientow(klienci, X1 + 1);
+    // wyswietl_klientow(klienci, pool_size + 1);
 
-    // for (int i = 0; i < X1; i++) {
+    // for (int i = 0; i < pool_size; i++) {
     //     if (byli_klienci[i] == 0) {
     //         printf("Miejsce %d: PUSTE\n", i);
     //     } else {

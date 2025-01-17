@@ -1,6 +1,12 @@
 #include "utility.c"
 
-int main() {
+int main(int argc, char *argv[]) {
+    if (argc < 2) {
+        fprintf(stderr, "Brak podanego czasu!\n");
+        exit(EXIT_FAILURE);
+    }
+
+    time_t zamkniecie = (time_t)strtol(argv[1], NULL, 10);
     srand(time(NULL));
 
     struct msgbuf msg;
@@ -17,7 +23,17 @@ int main() {
     local = czas();
     printf("%sKasjer [%d]%s Oczekiwanie na komunikaty...\n", BLUE, getpid(), RESET);
 
+
+    // time_t okresowe_zamkniecie = zamkniecie - (dlugosc_otwarcia / 2);
+    // time_t okresowe_otwarcie = okresowe_zamkniecie + (dlugosc_otwarcia / 4);
+
     while (1) { 
+        // if(time(NULL) >= okresowe_zamkniecie){
+        //     local = czas();
+        //     printf("%s[%02d:%02d:%02d]%s KASJER ZAMYKA KASY")
+        //     sleep(dlugosc_otwarcia / 4);
+        // }
+
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
             perror("Blad msgrcv msgID (kasjer)");
             exit(EXIT_FAILURE);
@@ -38,8 +54,13 @@ int main() {
         else{
             printf("%s[%02d:%02d:%02d  %d]%s Klient płaci za bilet.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
-
+        
         msg.czas_wyjscia = time(NULL) + 20;
+
+        if (msg.czas_wyjscia > zamkniecie){
+            msg.czas_wyjscia = zamkniecie;
+        }
+
         msg.mtype = msg.pid;
 
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {

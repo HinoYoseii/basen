@@ -3,7 +3,7 @@
 struct tm* czas() {
     static time_t now;
     static struct tm local_time;
-
+    
     time(&now);
     local_time = *localtime(&now);
 

@@ -148,7 +148,7 @@ int main() {
         }
     }
     else{
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     }
     
     return 0;
