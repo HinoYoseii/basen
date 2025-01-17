@@ -20,33 +20,23 @@ int main() {
     struct tm *wyjscie;
 
     int msgID, msgrID, nr_basenu, vip;
-    key_t msg_key, msg2_key;
+    key_t msg_key, msgr_key;
     struct msgbuf msg;
     struct msgbuf_r msgr;
 
-    
 
-    if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok A (klient)");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgID = msgget(msg_key, IPC_CREAT | 0666)) == -1) {
-        perror("Blad msgget msgID (klient)");
-        exit(EXIT_FAILURE);
-    }
+    msg_key = ftok(".", 'M');
+    sprawdz_blad(msg_key, "ftok M (klient)");
+    msgID = msgget(msg_key, IPC_CREAT | 0666);
+    sprawdz_blad(msgID, "msgget msgID (zarzadca)");
 
-    if ((msg2_key = ftok(".", 'R')) == -1) {
-        printf("Blad ftok R (klient)");
-        exit(EXIT_FAILURE);
-    }
-    
-    if ((msgrID = msgget(msg2_key, IPC_CREAT | 0666)) == -1) {
-        perror("Blad msgget msgrID (klient)");
-        exit(EXIT_FAILURE);
-    }
+    msgr_key = ftok(".", 'R');
+    sprawdz_blad(msgr_key, "ftok R (klient)");
+    msgrID = msgget(msgr_key, IPC_CREAT | 0666);
+    sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
+
 
     vip = (rand() % 5 + 1 == 5) ? 1 : 2;
-
     local = czas();
     if(vip == 1)
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient VIP.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
@@ -54,8 +44,8 @@ int main() {
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
         
     klient.pid = getpid();
-    klient.wiek = 20;
-    //klient.wiek = (rand() % 70) + 1;
+    //klient.wiek = 20;
+    klient.wiek = (rand() % 70) + 1;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
@@ -150,16 +140,17 @@ int main() {
     
     local = czas();
     if(klient.basen){
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu i basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
         msgr.mtype = klient.basen + 3;
         if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
             perror("Blad msgsnd msgrID (klient)");
             exit(EXIT_FAILURE);
         }
     }
+    else{
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    }
     
-    printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kopmpleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
-
     return 0;
 }
 

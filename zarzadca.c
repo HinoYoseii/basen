@@ -8,6 +8,7 @@ void clean();
 
 int main() {
     srand(time(NULL));
+
     struct sigaction act;
     act.sa_handler = koniec;
     sigemptyset(&act.sa_mask);
@@ -15,147 +16,96 @@ int main() {
     sigaction(SIGINT, &act, 0);
     
     pid_t pid;
-    key_t msg_key, msg_key2;
-    time_t zamkniecie = time(NULL) + 60;
+    key_t msg_key, msgr_key;
+    time_t zamkniecie = time(NULL) + 120;
+    struct tm *local;
+    int dzieci = 0;
 
-    // Utwórz kolejkę komunikatów
-    if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok M (zarzadca)");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgID = msgget(msg_key, IPC_CREAT |  IPC_EXCL  | 0666)) == -1) {
-        perror("Blad msgget msgID (zarzadca)");
-        exit(EXIT_FAILURE);
-    }
+    msg_key = ftok(".", 'M');
+    sprawdz_blad(msg_key, "ftok M (zarzadca)");
+    msgID = msgget(msg_key, IPC_CREAT | IPC_EXCL | 0666);
+    sprawdz_blad(msgID, "msgget msgID (zarzadca)");
 
-    printf("%sKolejka komunikatów utworzona. MSGID: %d%s\n", GREEN, msgID, RESET);
+    printf("%sKolejka komunikatów utworzona. MSGID: %d%s\n", CYAN, msgID, RESET);
 
-    if ((msg_key2 = ftok(".", 'R')) == -1) {
-        printf("Blad ftok R (zarzadca)\n");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgrID = msgget(msg_key2, IPC_CREAT |  IPC_EXCL  | 0666)) == -1) {
-        perror("Blad msgget msgrID (zarzadca)");
-        exit(EXIT_FAILURE);
-    }
+    msgr_key = ftok(".", 'R');
+    sprawdz_blad(msgr_key, "ftok R (zarzadca)");
+    msgrID = msgget(msgr_key, IPC_CREAT | IPC_EXCL | 0666);
+    sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
 
-    printf("%sKolejka komunikatów utworzona. MSGRID: %d%s\n", GREEN, msgrID, RESET);
+    printf("%sKolejka komunikatów utworzona. MSGRID: %d%s\n", CYAN, msgrID, RESET);
 
-    // // Utwórz pamięć dzieloną
-    // key_t shm_key;
-    // int shm_ID;
-    // if ((shm_key = ftok(".", 'S')) == -1) {
-    //     printf("Blad ftok S (zarzadca)\n");
-    //     exit(EXIT_FAILURE);
-    // }
-    // if ((shmID = shmget(shm_key, sizeof(SharedMemory), IPC_CREAT | IPC_EXCL | 0666)) == -1) {
-    //     perror("Blad shmget shmID (zarzadca)");
-    //     exit(EXIT_FAILURE);
-    // }
-
-    // printf("%sPamięć dzielona utworzona. SHMID: %d%s\n", GREEN, shmID, RESET);
-    // printf("\n");
-
-    //uruchomienie kasjera
     pid_kasjer = fork();
+    sprawdz_blad(pid_kasjer, "Blad fork pid_kasjer (zarzadca)");
 
-    if (pid_kasjer == -1) {
-        perror("Blad fork pid_kasjer (zarzadca)");
-        exit(EXIT_FAILURE);
-    } else if (pid_kasjer == 0) {
+    if (pid_kasjer == 0) {
         execl("./kasjer", "kasjer", NULL);
-        perror("Blad execl pid_kasjer (zarzadca)");
-        exit(EXIT_FAILURE);
+        sprawdz_blad(-1, "Blad execl pid_kasjer (zarzadca)");
     }
 
-    char pool_id[10];
+    char pool_id[2];
     for (int i = 0; i < 3; i++) {
         pid_ratownik[i] = fork();
+        sprawdz_blad(pid_ratownik[i], "Blad fork pid_ratownik (zarzadca)");
 
-        if (pid_ratownik[i] == -1) {
-            perror("Blad fork pid_ratownik (zarzadca)");
-            exit(EXIT_FAILURE);
-        } else if (pid_ratownik[i] == 0) {
-            // Konwertuj numer basenu na string i przekaż jako argument do execl
+        if (pid_ratownik[i] == 0) {
             sprintf(pool_id, "%d", i + 1);
             execl("./ratownik", "ratownik", pool_id, NULL);
-
-            // Jeśli execl nie zadziała, zgłoś błąd
-            perror("Blad execl pid_ratownik (zarzadca)");
-            exit(EXIT_FAILURE);
+            sprawdz_blad(-1, "Blad execl pid_ratownik (zarzadca)");
         }
     }
     sleep(3);
-    printf("\n");
-    int dzieci = 0;
-    //uruchomienie klientów
+
+    local = czas();
+    printf("%s[%02d:%02d:%02d]%s OTWARCIE KOMPLEKSU BASENOWEGO\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
+
     while (time(NULL) < zamkniecie) {
         pid_t pid_klient = fork();
-    
-        if (pid_klient == -1) {
-            perror("Blad fork pid_klient (zarzadca)");
-            exit(EXIT_FAILURE);
-        } else if (pid_klient == 0) {
-            // Proces potomny - uruchom klienta
+        sprawdz_blad(pid_klient, "Blad fork pid_klient (zarzadca)");
+
+        if (pid_klient == 0) {
             execl("./klient", "klient", NULL);
-            perror("Blad execl pid_klient (zarzadca)");
-            exit(EXIT_FAILURE);
-            
+            sprawdz_blad(-1, "Blad execl pid_klient (zarzadca)");
         } else {
-            // continue;
             dzieci++;
             sleep(rand() % 6 + 1);
         }
     }
-    // for (int i = 0; i < 5; i++) {
-    //     pid_t pid_klient = fork();
-    
-    //     if (pid_klient == -1) {
-    //         perror("Blad fork pid_klient (zarzadca)");
-    //         exit(EXIT_FAILURE);
-    //     } else if (pid_klient == 0) {
-    //         // Proces potomny - uruchom klienta
-    //         execl("./klient", "klient", NULL);
-    //         perror("Blad execl pid_klient (zarzadca)");
-    //         exit(EXIT_FAILURE);
-            
-    //     } else {
-    //         // continue;
-    //         dzieci++;
-    //         sleep(rand() % 15 + 1);
-    //     }
-    // }
-    printf("dzieci: %d\n", dzieci);
+
+    local = czas();
+    printf("%s[%02d:%02d:%02d]%s KONIEC WPUSZCZANIA KLIENTÓW\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
+
     for (int i = 0; i < dzieci; i++) {
         int status;
         pid_t finished_pid = wait(&status);
-        if (finished_pid == -1) {
-            perror("Błąd wait");
-            exit(EXIT_FAILURE);
-        }
-        printf("%sProces o PID %d zakończył się. Status: %d%s\n",YELLOW, finished_pid, WEXITSTATUS(status), RESET);
+        sprawdz_blad(finished_pid, "Błąd wait");
+
+        //printf("%sProces o PID %d zakończył się. Status: %d%s\n", YELLOW, finished_pid, WEXITSTATUS(status), RESET);
     }
 
-    for(int i = 0; i < 3; i++){
-        kill(pid_ratownik[i], SIGTERM);
+    local = czas();
+    printf("%s[%02d:%02d:%02d]%s WYMIANA WODY\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
+    
+    for (int i = 0; i < 3; i++) {
+        sprawdz_blad(kill(pid_ratownik[i], SIGTERM), "Błąd kill pid_ratownik (zarzadca)");
     }
-    kill(pid_kasjer, SIGTERM);
-    msgctl(msgrID, IPC_RMID, NULL);
-    msgctl(msgID, IPC_RMID, NULL);
-    //shmctl(shmID, IPC_RMID, NULL);
-    printf("MAIN: Koniec.\n");
+    sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
+    sprawdz_blad(msgctl(msgrID, IPC_RMID, NULL), "Błąd msgctl msgrID (zarzadca)");
+    sprawdz_blad(msgctl(msgID, IPC_RMID, NULL), "Błąd msgctl msgID (zarzadca)");
+
+    printf("ZARZADCA: Koniec.\n");
     return 0;
 }
 
 
 void koniec(int sig) {
-    for(int i = 0; i < 3; i++){
-        kill(pid_ratownik[i], SIGTERM);
+    for (int i = 0; i < 3; i++) {
+        sprawdz_blad(kill(pid_ratownik[i], SIGTERM), "Błąd kill pid_ratownik (zarzadca)");
     }
-    kill(pid_kasjer, SIGTERM);
-    msgctl(msgrID, IPC_RMID, NULL);
-    msgctl(msgID, IPC_RMID, NULL);
-    //shmctl(shmID, IPC_RMID, NULL);
-    printf("MAIN - funkcja koniec sygnal %d: Koniec.\n", sig);
+    sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
+    sprawdz_blad(msgctl(msgrID, IPC_RMID, NULL), "Błąd msgctl msgrID (zarzadca)");
+    sprawdz_blad(msgctl(msgID, IPC_RMID, NULL), "Błąd msgctl msgID (zarzadca)");
+
+    printf("ZARZADCA - funkcja koniec sygnal %d: Koniec.\n", sig);
     exit(1);
 }

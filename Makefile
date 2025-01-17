@@ -17,5 +17,5 @@ ratownik.o: ratownik.c
 	gcc -pthread -c ratownik.c
 utility: utility.o
 	gcc -pthread -o utility utility.o
-utility.o: utility.c
+utility.o: utility.c utility.h
 	gcc -pthread -c utility.c

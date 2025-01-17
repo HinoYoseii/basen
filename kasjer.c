@@ -9,17 +9,13 @@ int main() {
     time_t now;
     struct tm *local;
 
-    if ((msg_key = ftok(".", 'M')) == -1) {
-        printf("Blad ftok M (kasjer)");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgID = msgget(msg_key, IPC_CREAT | 0666)) == -1) {
-        perror("Blad msgget msgID (kasjer)");
-        exit(EXIT_FAILURE);
-    }
+    msg_key = ftok(".", 'M');
+    sprawdz_blad(msg_key, "ftok M (klient)");
+    msgID = msgget(msg_key, IPC_CREAT | 0666);
+    sprawdz_blad(msgID, "msgget msgID (zarzadca)");
 
     local = czas();
-    printf("Kasjer [%d]: Oczekiwanie na komunikaty...\n", getpid());
+    printf("%sKasjer [%d]%s Oczekiwanie na komunikaty...\n", BLUE, getpid(), RESET);
 
     while (1) { 
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {

@@ -11,7 +11,7 @@ pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik;
 pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;
 struct msgbuf_r msgr;
 int msgrID, pool_id;
-key_t msg2_key;
+key_t msgr_key;
 int czynny = 1;
 struct tm *local;
 
@@ -35,16 +35,12 @@ int main(int argc, char *argv[]) {
     srand(getpid());
     pool_id = atoi(argv[1]);
 
-    if ((msg2_key = ftok(".", 'R')) == -1) {
-        perror("Blad ftok R (ratownik)");
-        exit(EXIT_FAILURE);
-    }
-    if ((msgrID = msgget(msg2_key, IPC_CREAT | 0666)) == -1) {
-        perror("Blad msgget msgrID (ratownik)");
-        exit(EXIT_FAILURE);
-    }
+    msgr_key = ftok(".", 'R');
+    sprawdz_blad(msgr_key, "ftok R (klient)");
+    msgrID = msgget(msgr_key, IPC_CREAT | 0666);
+    sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
 
-    printf("Ratownik [%d]: Obsługuje basen %d\n", getpid(), pool_id);
+    printf("%sRatownik [%d]%s Obsługuje basen %d\n", MAGENTA, getpid(), RESET, pool_id);
 
     if (pool_id == 1) {
         // Inicjalizacja danych
@@ -497,8 +493,8 @@ void* sygnal(void *arg){
     for(int i = 0; i < rozmiar; i++)
         byli_klienci[i] = 0;
 
-    time_t send_signal1 = time(NULL) + rand() % 10 + 1;
-    time_t send_signal2 = send_signal1 + rand() % 10 + 1;
+    time_t send_signal1 = time(NULL) + rand() % 20 + 10;
+    time_t send_signal2 = send_signal1 + rand() % 10 + 5;
 
     while (time(NULL) < send_signal1) {
         sleep(1);
@@ -514,7 +510,7 @@ void* sygnal(void *arg){
         klienci[0][0] = 0;
         for (int i = 1; i <= rozmiar; i++) {
             if(klienci[0][i]){
-                printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[0][i]);
+                //printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[0][i]);
                 kill(klienci[0][i], SIGUSR1);
                 byli_klienci[i - 1] = klienci[0][i];
                 klienci[0][i] = 0;
@@ -525,7 +521,7 @@ void* sygnal(void *arg){
     else{
         for (int i = 1; i <= rozmiar; i++) {
             if(klienci[i]){
-                printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[i]);
+                //printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[i]);
                 kill(klienci[i], SIGUSR1);
                 byli_klienci[i - 1] = klienci[i];
                 klienci[i] = 0;
@@ -537,13 +533,13 @@ void* sygnal(void *arg){
     // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
     // wyswietl_klientow(klienci, X1 + 1);
 
-    for (int i = 0; i < X1; i++) {
-        if (byli_klienci[i] == 0) {
-            printf("Miejsce %d: PUSTE\n", i);
-        } else {
-            printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
-        }
-    }
+    // for (int i = 0; i < X1; i++) {
+    //     if (byli_klienci[i] == 0) {
+    //         printf("Miejsce %d: PUSTE\n", i);
+    //     } else {
+    //         printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
+    //     }
+    // }
 
     pthread_mutex_unlock(mutex);
 
@@ -558,7 +554,7 @@ void* sygnal(void *arg){
 
     for (int i = 0; i < rozmiar; i++) {
         if(byli_klienci[i]){
-            printf("Wysyłanie SIGUSR2 do PID %d\n", byli_klienci[i]);
+            //printf("Wysyłanie SIGUSR2 do PID %d\n", byli_klienci[i]);
             kill(byli_klienci[i], SIGUSR2);
         }
     }
