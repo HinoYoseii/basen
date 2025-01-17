@@ -16,7 +16,7 @@ int main() {
     
     pid_t pid;
     key_t msg_key, msg_key2;
-    time_t zamkniecie = time(NULL) + 20;
+    time_t zamkniecie = time(NULL) + 60;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {

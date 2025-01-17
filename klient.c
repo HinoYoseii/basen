@@ -98,8 +98,8 @@ int main() {
             do {
                 if(time(NULL) >= klient.czas_wyjscia)
                     break;
-                nr_basenu = 2;
-                // nr_basenu = (rand() % 3) + 1;
+                //nr_basenu = 2;
+                nr_basenu = (rand() % 3) + 1;
             } while (nr_basenu == ban);
 
             msgr.mtype = nr_basenu;
@@ -130,10 +130,10 @@ int main() {
                     printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez wiek: %d.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
                 }
                 else if(msgr.kom == 'n'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez pełny basen.\n", YELLOW, getpid(), nr_basenu, RESET);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez pełny basen.\n", YELLOW, getpid(), RESET, nr_basenu);
                 }
                 else if(msgr.kom == 's'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), nr_basenu, RESET);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), RESET, nr_basenu);
                 }
                 spanie = ((rand() % 20) + 1);
             }
