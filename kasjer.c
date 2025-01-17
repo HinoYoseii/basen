@@ -43,7 +43,7 @@ int main() {
             printf("%s[%02d:%02d:%02d  %d]%s Klient płaci za bilet.\n", BLUE, local->tm_hour, local->tm_min, local->tm_sec, msg.pid, RESET);
         }
 
-        msg.czas_wyjscia = time(NULL) + 10;
+        msg.czas_wyjscia = time(NULL) + 20;
         msg.mtype = msg.pid;
 
         if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {

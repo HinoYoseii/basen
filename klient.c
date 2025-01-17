@@ -1,7 +1,9 @@
 #include "utility.c"
 
 void signal_handler(int signal_num);
+int custom_rand(int min, int max, int exclude);
 struct klient_dane klient;
+int ban;
 
 int main() {
     struct sigaction sa;
@@ -52,7 +54,8 @@ int main() {
         printf("%s[%02d:%02d:%02d  %d]%s Pojawia się klient.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
         
     klient.pid = getpid();
-    klient.wiek = (rand() % 70) + 1;
+    klient.wiek = 20;
+    //klient.wiek = (rand() % 70) + 1;
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
@@ -70,6 +73,7 @@ int main() {
         perror("Blad msgrcv msgID (klient)");
         exit(EXIT_FAILURE);
     }
+    klient.czas_wyjscia = msg.czas_wyjscia;
 
     local = czas();
     printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na kompleks basenowy.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
@@ -83,19 +87,21 @@ int main() {
         local = czas();
         printf("%s[%02d:%02d:%02d  %d]%s Klient zakłada czepek.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
     }
-
-    klient.czas_wyjscia = msg.czas_wyjscia;
-    //wyjscie = localtime(&klient.czas_wyjscia);
-    //printf("%s[%d]%s Czas wyjścia klienta: %02d:%02d:%02d\n", YELLOW, getpid(), RESET, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec);
     
     msgr.pid = getpid();
     msgr.wiek = klient.wiek;
     msgr.wiek_opiekuna = klient.wiek_opiekuna;
     int spanie;
-    while (1){
+    
+    while (1){  
         if(!klient.basen){
-            nr_basenu = 1;
-            //nr_basenu = rand() % 3 + 1;
+            do {
+                if(time(NULL) >= klient.czas_wyjscia)
+                    break;
+                nr_basenu = 2;
+                // nr_basenu = (rand() % 3) + 1;
+            } while (nr_basenu == ban);
+
             msgr.mtype = nr_basenu;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
@@ -160,9 +166,12 @@ int main() {
 void signal_handler(int signal_num){
     if(signal_num == SIGUSR1){
         printf("%s[%d]%s Klient odebral sygnal 1 Wychodzi z basenu nr.%d.\n", RED, getpid(), RESET, klient.basen);
+        ban = klient.basen;
         klient.basen = 0;
+        
     }
     else if (signal_num == SIGUSR2) {
-        printf("%s[%d]%s Klient odebrał sygnał 2.\n", RED, getpid(), RESET);
+        printf("%s[%d]%s Klient odebrał sygnał 2. Znowu może wejśc na basen nr. %d\n", RED, getpid(), RESET, ban);
+        ban = 0;
     }
 }

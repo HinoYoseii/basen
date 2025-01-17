@@ -21,7 +21,7 @@
 #define X1 3 // olimpijski
 #define X2 4 // rekreacyjny
 #define X3 4 // brodzik
-#define DLUGOSC_OTWARCIA 60 //w sekundach
+//#define DLUGOSC_OTWARCIA 20 //w sekundach
 
 const char *RESET = "\033[0m";
 const char *RED = "\033[31m";

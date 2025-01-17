@@ -116,11 +116,21 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
+        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
+            perror("pthread_create - wątek wychodzenia");
+            exit(EXIT_FAILURE);
+        }
+
         // Oczekiwanie na zakończenie wątków
         if (pthread_join(t_wpuszczanie, NULL) != 0) {
             perror("pthread_join - wątek wpuszczania");
         }
+
         if (pthread_join(t_wychodzenie, NULL) != 0) {
+            perror("pthread_join - wątek wychodzenia");
+        }
+
+        if (pthread_join(t_sygnaly, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
 
@@ -157,11 +167,20 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
 
+        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
+            perror("pthread_create - wątek wychodzenia");
+            exit(EXIT_FAILURE);
+        }
+
         // Oczekiwanie na zakończenie wątków
         if (pthread_join(t_wpuszczanie, NULL) != 0) {
             perror("pthread_join - wątek wpuszczania");
         }
         if (pthread_join(t_wychodzenie, NULL) != 0) {
+            perror("pthread_join - wątek wychodzenia");
+        }
+        
+        if (pthread_join(t_sygnaly, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
 
@@ -252,7 +271,7 @@ void *rekreacyjny(void *arg){
         if(!czynny){
             msgr.kom = 'c';
         }
-        if (klienci[0][0] >= (X2 - liczba_osob)) {
+        else if (klienci[0][0] >= (X2 - liczba_osob)) {
             msgr.kom = 'n';
         } else if (srednia > 40) {
            //printf("srednia: %f\n", srednia);
@@ -307,11 +326,10 @@ void *brodzik(void *arg) {
         
         pthread_mutex_lock(&mutex_brodzik);
         msgr.mtype = msgr.pid;
-        
         if(!czynny){
             msgr.kom = 'c';
         }
-        if (msgr.wiek > 5) {
+        else if (msgr.wiek > 5) {
             msgr.kom = 'w';
         } else if (klienci[0] >= X3) {
             msgr.kom = 'n';
@@ -324,8 +342,8 @@ void *brodzik(void *arg) {
                     break;
                 }
             }
-            // printf("\nStan tablicy klienci BRODZIK:\n");
-            // wyswietl_klientow(klienci, (X3/2 + 1));
+            printf("\nStan tablicy klienci BRODZIK:\n");
+            wyswietl_klientow(klienci, (X3/2 + 1));
         }
         
         pthread_mutex_unlock(&mutex_brodzik);
@@ -471,50 +489,79 @@ double suma_wieku(int klienci[2][X2+1], int liczba_klientow) {
 
 void* sygnal(void *arg){
     int *klienci = (int *)arg;
-    time_t send_signal1 = time(NULL) + 10;
 
-    // while(time(NULL) < ){
-        while (time(NULL) < send_signal1) {
-            sleep(1); // Oczekuj sekundę, zanim ponownie sprawdzisz warunek
+    pthread_mutex_t *mutex = (pool_id == 1) ? &mutex_olimpijski : (pool_id == 2) ? &mutex_rekreacyjny : &mutex_brodzik;
+
+    int rozmiar = (pool_id == 1 ? X1 : (pool_id == 2 ? X2 : (X3/2)));
+    int byli_klienci[rozmiar];
+    for(int i = 0; i < rozmiar; i++)
+        byli_klienci[i] = 0;
+
+    time_t send_signal1 = time(NULL) + rand() % 10 + 1;
+    time_t send_signal2 = send_signal1 + rand() % 10 + 1;
+
+    while (time(NULL) < send_signal1) {
+        sleep(1);
+    }
+
+    pthread_mutex_lock(mutex);
+    local = czas();
+    printf("%s[%02d:%02d:%02d  %d]%s RATOWNIK WYSYŁA SYGNAŁ NA WYJŚCIE Z BASENU NR.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, pool_id, RESET, pool_id);
+    czynny = 0;
+
+    if(pool_id == 2){
+        int (*klienci)[X2 + 1] = (int (*)[X2 + 1])arg;
+        klienci[0][0] = 0;
+        for (int i = 1; i <= rozmiar; i++) {
+            if(klienci[0][i]){
+                printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[0][i]);
+                kill(klienci[0][i], SIGUSR1);
+                byli_klienci[i - 1] = klienci[0][i];
+                klienci[0][i] = 0;
+                klienci[1][i] = 0;
+            }
         }
-
-        if(pool_id == 1){
-            int byli_klienci[X1];
-            for(int i = 0; i < X1; i++){
-                byli_klienci[i] = 0;
+    }
+    else{
+        for (int i = 1; i <= rozmiar; i++) {
+            if(klienci[i]){
+                printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[i]);
+                kill(klienci[i], SIGUSR1);
+                byli_klienci[i - 1] = klienci[i];
+                klienci[i] = 0;
+                klienci[0]--;
             }
-
-            
-            pthread_mutex_lock(&mutex_olimpijski);
-            local = czas();
-            printf("%s[%02d:%02d:%02d  %d]%s RATOWNIK WYSYŁA SYGNAŁ NA WYJŚCIE Z BASENU OLIMPIJSKIEGO.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, pool_id, RESET);
-            czynny = 0;
-
-            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-            wyswietl_klientow(klienci, X1 + 1);
-            
-            for (int i = 1; i <= X1; i++) {
-                if(klienci[i]){
-                    printf("Wysyłanie SIGUSR1 do PID %d\n", klienci[i]);
-                    kill(klienci[i], SIGUSR1);
-                    byli_klienci[i - 1] = klienci[i];
-                    klienci[i] = 0;
-                    klienci[0]--;
-                }
-            }
-            printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-            wyswietl_klientow(klienci, X1 + 1);
-
-            for (int i = 0; i < X1; i++) {
-                if (byli_klienci[i] == 0) {
-                    printf("Miejsce %d: PUSTE\n", i);
-                } else {
-                    printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
-                }
-            }
-
-            pthread_mutex_unlock(&mutex_olimpijski);
         }
-        //break;
-    //}
+    }
+   
+    // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
+    // wyswietl_klientow(klienci, X1 + 1);
+
+    for (int i = 0; i < X1; i++) {
+        if (byli_klienci[i] == 0) {
+            printf("Miejsce %d: PUSTE\n", i);
+        } else {
+            printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
+        }
+    }
+
+    pthread_mutex_unlock(mutex);
+
+    while (time(NULL) < send_signal2) {
+        sleep(1);
+    }
+
+    pthread_mutex_lock(mutex);
+    local = czas();
+    printf("%s[%02d:%02d:%02d  %d]%s RATOWNIK WYSYŁA SYGNAŁ NA POWRÓT DO BASENU NR.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, pool_id, RESET, pool_id);
+    czynny = 1;
+
+    for (int i = 0; i < rozmiar; i++) {
+        if(byli_klienci[i]){
+            printf("Wysyłanie SIGUSR2 do PID %d\n", byli_klienci[i]);
+            kill(byli_klienci[i], SIGUSR2);
+        }
+    }
+
+    pthread_mutex_unlock(mutex);
 }

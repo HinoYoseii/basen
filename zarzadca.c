@@ -16,7 +16,7 @@ int main() {
     
     pid_t pid;
     key_t msg_key, msg_key2;
-    time_t zamkniecie = time(NULL) + DLUGOSC_OTWARCIA;
+    time_t zamkniecie = time(NULL) + 20;
 
     // Utwórz kolejkę komunikatów
     if ((msg_key = ftok(".", 'M')) == -1) {
@@ -133,7 +133,7 @@ int main() {
             perror("Błąd wait");
             exit(EXIT_FAILURE);
         }
-        //printf("%sProces o PID %d zakończył się. Status: %d%s\n",YELLOW, finished_pid, WEXITSTATUS(status), RESET);
+        printf("%sProces o PID %d zakończył się. Status: %d%s\n",YELLOW, finished_pid, WEXITSTATUS(status), RESET);
     }
 
     for(int i = 0; i < 3; i++){
