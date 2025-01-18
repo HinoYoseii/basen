@@ -1,33 +1,30 @@
 #include "utility.c"
-#include "utility.h"
 
-pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik;
-pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;
-struct msgbuf_r msgr;
-int msgrID, pool_id, pool_size, shmID, dlugosc_otwarcia;
-key_t msgr_key, shm_key;
-int czynny = 1;
-struct tm *local;
-struct shared_mem *shared_data;
+pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik; // Mutexy do blokowania poszczególych basenów
+pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;  // Identifykatory wątków w każdym z procesów
+key_t msgr_key, shm_key;    // Klucze do kolejki komunikatów i pamięci współdzielonej
+int msgrID, shmID; // ID kolejki komunikatów i pamięci współdzielonej
+int pool_id, pool_size, dlugosc_otwarcia, czynny = 1;   // zmienne do obsługi basenów
+struct msgbuf_r msgr;   // Bufor do komunikatu
+struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
+struct shared_mem *shared_data; // Wskaźnik na strukture pamięci współdzielonej
 
-// Funkcje wątków
 void *olimpijski(void *arg);
 void *rekreacyjny(void *arg);
 void *brodzik(void *arg);
 void *wychodzenie_olimpijski(void *arg);
 void *wychodzenie_rekreacyjny(void *arg);
 void *wychodzenie_brodzik(void *arg);
-void wyswietl_klientow(int *klienci, int rozmiar);
-double suma_wieku(int klienci[2][pool_size+1], int liczba_klientow);
 void* sygnal(void *arg);
 
 int main(int argc, char *argv[]) {
+    srand(getpid());
+    // Pobranie id basenu i jego rozmiaru
     if (argc < 3) {
-        fprintf(stderr, "Blad: Brak identyfikatora basenu\n");
+        fprintf(stderr, "Blad: Brak identyfikatora i rozmiaru basenu\n");
         exit(EXIT_FAILURE);
     }
 
-    srand(getpid());
     pool_id = atoi(argv[1]);
     pool_size = atoi(argv[2]);
     //printf("Wartość X%d: %d\n", pool_id, pool_size);
@@ -458,28 +455,6 @@ void *wychodzenie_brodzik(void *arg){
     }
 
     pthread_exit(NULL);
-}
-
-void wyswietl_klientow(int *klienci, int rozmiar) {
-    printf("Liczba klientów na basenie: %d\n", klienci[0]);
-    for (int i = 1; i < rozmiar; i++) {
-        if (klienci[i] == 0) {
-            printf("Miejsce %d: PUSTE\n", i);
-        } else {
-            printf("Miejsce %d: PID klienta %d\n", i, klienci[i]);
-        }
-    }
-    printf("\n");
-}
-
-double suma_wieku(int klienci[2][pool_size+1], int liczba_klientow) {
-    double suma = 0;
-
-    for (int i = 1; i <= liczba_klientow; i++) {
-        suma += klienci[1][i];
-    }
-
-    return suma;
 }
 
 void* sygnal(void *arg){

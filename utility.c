@@ -17,3 +17,16 @@ void sprawdz_blad(int wynik, const char *opis) {
         exit(EXIT_FAILURE);
     }
 }
+
+void wyswietl_klientow(int *klienci, int rozmiar) {
+    printf("Liczba klientów na basenie: %d\n", klienci[0]);
+    for (int i = 1; i < rozmiar; i++) {
+        if (klienci[i] == 0) {
+            printf("Miejsce %d: PUSTE\n", i);
+        } else {
+            printf("Miejsce %d: PID klienta %d\n", i, klienci[i]);
+        }
+    }
+    printf("\n");
+}
+

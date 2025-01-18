@@ -16,7 +16,7 @@ int main() {
     sigaction(SIGINT, &act, 0);
 
     key_t msg_key, msgr_key, shm_key;   // Klucze do kolejek i pamięci
-    struct tm *local;   // Obecny czas
+    struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
     time_t zamkniecie;  // Godzina zamknięcia
     struct shared_mem *shared_data; // Wskaźnik na strukture pamięci współdzielonej
 

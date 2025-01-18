@@ -10,14 +10,14 @@ int main(int argc, char *argv[]) {
     key_t msg_key;  // Klucz kolejki komunikatów
     int msgID;  // ID kolejki komunikatów
     time_t zamkniecie = (time_t)strtol(argv[1], NULL, 10);  // godzina zamknięcia basenu
-    struct msgbuf msg;  // bufor do komunikacji
-    struct tm *local;   // obecny czas
+    struct msgbuf msg;  // Bufor do kolejki komunikatów
+    struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
 
-    // Dołączenie do kolejki komunikatów
+    // Dołączenie do kolejki komunikatów klient <-> kasjer
     msg_key = ftok(".", 'M');
     sprawdz_blad(msg_key, "ftok M (klient)");
     msgID = msgget(msg_key, IPC_CREAT | 0666);
-    sprawdz_blad(msgID, "msgget msgID (zarzadca)");
+    sprawdz_blad(msgID, "msgget msgID (kasjer)");
 
     local = czas();
     printf("%sKasjer [%d]%s Oczekiwanie na komunikaty...\n", BLUE, getpid(), RESET);
