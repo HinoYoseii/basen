@@ -26,7 +26,6 @@ int main(int argc, char *argv[]) {
         // Odbieranie komunikatów typu 1 i 2 od klienta
         sprawdz_blad(msgrcv(msgID, &msg, sizeof(msg) - sizeof(long), -2, 0), "Blad msgrcv msgID (kasjer) - odebranie komunikatu od klienta");
 
-
         // Sprawdzenie typu klienta
         local = czas();
         if (msg.mtype == 1){

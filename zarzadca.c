@@ -124,7 +124,7 @@ int main() {
             sprawdz_blad(-1, "Blad execl pid_klient (zarzadca)");
         } else {
             dzieci++;
-            sleep(rand() % 6 + 1);
+            sleep(rand() % 3 + 1);
         }
     }
 

@@ -9,13 +9,13 @@ struct msgbuf_r msgr;   // Bufor do komunikatu
 struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
 struct shared_mem *shared_data; // Wskaźnik na strukture pamięci współdzielonej
 
-void *olimpijski(void *arg);
-void *rekreacyjny(void *arg);
-void *brodzik(void *arg);
-void *wychodzenie_olimpijski(void *arg);
-void *wychodzenie_rekreacyjny(void *arg);
-void *wychodzenie_brodzik(void *arg);
-void* sygnal(void *arg);
+void *olimpijski(void *arg);    // Funkcja obsługująca klientów wchodzących do basenu olimpijskiego
+void *rekreacyjny(void *arg);   // Funkcja obsługująca klientów wchodzących do basenu rekreacyjnego
+void *brodzik(void *arg);       // Funkcja obsługująca klientów wchodzących do brodzika
+void *wychodzenie_olimpijski(void *arg);    // Funkcja obsługująca klientów wychodzących z basenu olimpijskiego
+void *wychodzenie_rekreacyjny(void *arg);   // Funkcja obsługująca klientów wychodzących z basenu rekreacyjnego
+void *wychodzenie_brodzik(void *arg);       // Funkcja obsługująca klientów wychodzących z brodzika
+void* sygnal(void *arg);    // Funkcja do obsługi wysyłania sygnałów
 
 int main(int argc, char *argv[]) {
     srand(getpid());
@@ -29,159 +29,92 @@ int main(int argc, char *argv[]) {
     pool_size = atoi(argv[2]);
     //printf("Wartość X%d: %d\n", pool_id, pool_size);
 
+    // Dołączenie do kolejki komunikatów klient <-> ratownik
     msgr_key = ftok(".", 'R');
     sprawdz_blad(msgr_key, "ftok R (klient)");
     msgrID = msgget(msgr_key, IPC_CREAT | 0666);
     sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
 
+    // Dołączenie do fragmentu pamięci współdzielonej
     shm_key = ftok(".", 'S');
     sprawdz_blad(shm_key, "ftok S (zarzadca)");
     shmID = shmget(shm_key, sizeof(struct shared_mem), IPC_CREAT | 0666);
     sprawdz_blad(shmID, "shmget shmID (zarzadca)");
-
+    // Pobranie długości otwarcia basenu z pamięci współdzielonej
     shared_data = shmat(shmID, NULL, 0);
     dlugosc_otwarcia = shared_data->dlugosc_otwarcia;
 
-    //printf("%d\n", dlugosc_otwarcia);
     printf("%sRatownik [%d]%s Obsługuje basen %d o rozmiarze %d\n", MAGENTA, getpid(), RESET, pool_id, pool_size);
 
     if (pool_id == 1) {
-        // Inicjalizacja danych
+        // Inicjalizacja tablicy do basenu, rozmiar basenu + 1 na przechowanie liczby klientów
         int klienci[pool_size + 1];
         for (int i = 0; i <= pool_size; i++) {
             klienci[i] = 0;
         }
-
         // Inicjalizacja mutexa
-        if (pthread_mutex_init(&mutex_olimpijski, NULL) != 0) {
-            perror("pthread_mutex_init - błąd inicjalizacji mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_init(&mutex_olimpijski, NULL), "pthread_mutex_init ratownik 1 - mutex olimpijski");
 
         // Tworzenie wątków
-        if (pthread_create(&t_wpuszczanie, NULL, &olimpijski, klienci) != 0) {
-            perror("pthread_create - wątek wpuszczania");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pthread_create(&t_wychodzenie, NULL, &wychodzenie_olimpijski, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
-
-        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_create(&t_wpuszczanie, NULL, &olimpijski, klienci), "pthread_create ratownik 1 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_create(&t_wychodzenie, NULL, &wychodzenie_olimpijski, klienci), "pthread_create ratownik 1 - wątek t_wychodzenie_olimpijski");
+        sprawdz_blad_watek(pthread_create(&t_sygnaly, NULL, &sygnal, klienci), "pthread_create ratownik 1 - wątek t_sygnaly");
 
         // Oczekiwanie na zakończenie wątków
-        if (pthread_join(t_wpuszczanie, NULL) != 0) {
-            perror("pthread_join - wątek wpuszczania");
-        }
-        if (pthread_join(t_wychodzenie, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
-        if (pthread_join(t_sygnaly, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
+        sprawdz_blad_watek(pthread_join(t_wpuszczanie, NULL), "pthread_join ratownik 1 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_join(t_wychodzenie, NULL), "pthread_join ratownik 1 - wątek t_wychodzenie");
+        sprawdz_blad_watek(pthread_join(t_sygnaly, NULL), "pthread_join ratownik 1 - wątek t_sygnaly");
 
         // Niszczenie mutexa
-        if (pthread_mutex_destroy(&mutex_olimpijski) != 0) {
-            perror("pthread_mutex_destroy - błąd niszczenia mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_destroy(&mutex_olimpijski), "pthread_mutex_destroy ratownik 1 - mutex olimpijski");
     }
     else if(pool_id == 2){
+        // Inicjalizacja tablicy do basenu, rozmiar basenu + 1 na przechowanie liczby klientów
         int klienci[2][pool_size + 1];
         for (int i = 0; i <= pool_size; i++) {
             klienci[0][i] = 0;
             klienci[1][i] = 0;
         }
-
         // Inicjalizacja mutexa
-        if (pthread_mutex_init(&mutex_rekreacyjny, NULL) != 0) {
-            perror("pthread_mutex_init - błąd inicjalizacji mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_init(&mutex_rekreacyjny, NULL), "pthread_mutex_init ratownik 2 - mutex rekreacyjny");
 
         // Tworzenie wątków
-        if (pthread_create(&t_wpuszczanie, NULL, &rekreacyjny, klienci) != 0) {
-            perror("pthread_create - wątek wpuszczania");
-            exit(EXIT_FAILURE);
-        }
-        if (pthread_create(&t_wychodzenie, NULL, &wychodzenie_rekreacyjny, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
-        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_create(&t_wpuszczanie, NULL, &rekreacyjny, klienci), "pthread_create ratownik 2 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_create(&t_wychodzenie, NULL, &wychodzenie_rekreacyjny, klienci), "pthread_create ratownik 2 - wątek t_wychodzenie_rekreacyjny");
+        sprawdz_blad_watek(pthread_create(&t_sygnaly, NULL, &sygnal, klienci), "pthread_create ratownik 2 - wątek t_sygnaly");
 
         // Oczekiwanie na zakończenie wątków
-        if (pthread_join(t_wpuszczanie, NULL) != 0) {
-            perror("pthread_join - wątek wpuszczania");
-        }
-        if (pthread_join(t_wychodzenie, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
-        if (pthread_join(t_sygnaly, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
+        sprawdz_blad_watek(pthread_join(t_wpuszczanie, NULL), "pthread_join ratownik 2 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_join(t_wychodzenie, NULL), "pthread_join ratownik 2 - wątek t_wychodzenie");
+        sprawdz_blad_watek(pthread_join(t_sygnaly, NULL), "pthread_join ratownik 2 - wątek t_sygnaly");
 
         // Niszczenie mutexa
-        if (pthread_mutex_destroy(&mutex_rekreacyjny) != 0) {
-            perror("pthread_mutex_destroy - błąd niszczenia mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_destroy(&mutex_rekreacyjny), "pthread_mutex_destroy ratownik 2 - mutex rekreacyjny");
     }
     else if(pool_id == 3){
-
+        // Inicjalizacja tablicy do basenu rozmiar basenu/2 + 1 na przechowanie liczby klientów, zawsze wchodza dwie osoby dziecko + opiekun
         int klienci[(pool_size / 2) + 1];
         for (int i = 0; i <= (pool_size/2); i++) {
             klienci[i] = 0;
         }
-        // for (int i = 0; i <= (pool_size/2); i++) {
-        //     printf("%d - %d\n",i ,klienci[i]);
-        // }
-
         // Inicjalizacja mutexa
-        if (pthread_mutex_init(&mutex_brodzik, NULL) != 0) {
-            perror("pthread_mutex_init - błąd inicjalizacji mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_init(&mutex_brodzik, NULL), "pthread_mutex_init ratownik 3 - mutex brodzik");
 
         // Tworzenie wątków
-        if (pthread_create(&t_wpuszczanie, NULL, &brodzik, klienci) != 0) {
-            perror("pthread_create - wątek wpuszczania");
-            exit(EXIT_FAILURE);
-        }
-        if (pthread_create(&t_wychodzenie, NULL, &wychodzenie_brodzik, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
-        if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
-            perror("pthread_create - wątek wychodzenia");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_create(&t_wpuszczanie, NULL, &brodzik, klienci), "pthread_create ratownik 3 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_create(&t_wychodzenie, NULL, &wychodzenie_brodzik, klienci), "pthread_create ratownik 3 - wątek t_wychodzenie_brodzik");
+        sprawdz_blad_watek(pthread_create(&t_sygnaly, NULL, &sygnal, klienci), "pthread_create ratownik 3 - wątek t_sygnaly");
 
         // Oczekiwanie na zakończenie wątków
-        if (pthread_join(t_wpuszczanie, NULL) != 0) {
-            perror("pthread_join - wątek wpuszczania");
-        }
-        if (pthread_join(t_wychodzenie, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
-        if (pthread_join(t_sygnaly, NULL) != 0) {
-            perror("pthread_join - wątek wychodzenia");
-        }
+        sprawdz_blad_watek(pthread_join(t_wpuszczanie, NULL), "pthread_join ratownik 3 - wątek t_wpuszczanie");
+        sprawdz_blad_watek(pthread_join(t_wychodzenie, NULL), "pthread_join ratownik 3 - wątek t_wychodzenie");
+        sprawdz_blad_watek(pthread_join(t_sygnaly, NULL), "pthread_join ratownik 3 - wątek t_sygnaly");
 
         // Niszczenie mutexa
-        if (pthread_mutex_destroy(&mutex_brodzik) != 0) {
-            perror("pthread_mutex_destroy - błąd niszczenia mutexa");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad_watek(pthread_mutex_destroy(&mutex_brodzik), "pthread_mutex_destroy ratownik 3 - mutex brodzik");
     }
+
+    // Odłączenie pamięci
     sprawdz_blad(shmdt(shared_data), "Błąd shmdt shared_data (ratownik) - odłączanie pamięci.");
     return 0;
 }
@@ -190,11 +123,10 @@ void *olimpijski(void *arg) {
     int *klienci = (int *)arg;
 
     while (1) {
-        if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 1, 0) == -1) {
-            perror("Blad msgrcv msgrID (ratownik)");
-            pthread_exit(NULL);
-        }
+        // Odbieranie komunikatu od klienta
+        sprawdz_blad(msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), 1, 0), "Blad msgrcv msgeID (ratownik 1) - odebranie komunikatu od klienta");
 
+        // Blokowanie 
         pthread_mutex_lock(&mutex_olimpijski);
         msgr.mtype = msgr.pid;
         if(!czynny){
@@ -213,10 +145,9 @@ void *olimpijski(void *arg) {
                     break;
                 }
             }
-            // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-            // wyswietl_klientow(klienci, pool_size + 1);
+            printf("\nStan tablicy klienci po dodaniu klienta OLIMPIJSKI:\n");
+            wyswietl_klientow(klienci, pool_size + 1);
         }
-        
 
         pthread_mutex_unlock(&mutex_olimpijski);
 
@@ -257,9 +188,8 @@ void *rekreacyjny(void *arg){
         //printf("liczba klientow: %d\n", klienci[0][0]);
         int liczba_klientow = klienci[0][0] + liczba_osob + 1;
         srednia = (srednia + wiek_klienta) / liczba_klientow;
+        printf("srednia: %f\n", srednia);
 
-        //printf("suma_wieku: %f\n", srednia);
-        //srednia = (srednia + wiek_klienta) / (klienci[0][0] + liczba_osob);
         if(!czynny){
             msgr.kom = 'c';
         }
@@ -281,16 +211,16 @@ void *rekreacyjny(void *arg){
                     }
                     msgr.kom = 't';
 
-                    // printf("\nStan tablicy klienci REKREACYJNY:\n");
-                    // printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                    // for (int i = 1; i <= pool_size; i++) {
-                    //     if (klienci[0][i] == 0) {
-                    //         printf("Miejsce %d: PUSTE\n", i);
-                    //     } else {
-                    //         printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
-                    //     }
-                    // }
-                    // printf("\n");
+                    printf("\nStan tablicy klienci po dodaniu klienta REKREACYJNY:\n");
+                    printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                    for (int i = 1; i <= pool_size; i++) {
+                        if (klienci[0][i] == 0) {
+                            printf("Miejsce %d: PUSTE\n", i);
+                        } else {
+                            printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                        }
+                    }
+                    printf("\n");
 
                     break;
                 }
@@ -334,8 +264,8 @@ void *brodzik(void *arg) {
                     break;
                 }
             }
-            // printf("\nStan tablicy klienci BRODZIK:\n");
-            // wyswietl_klientow(klienci, (pool_size/2 + 1));
+            printf("\nStan tablicy klienci po dodaniu klienta BRODZIK:\n");
+            wyswietl_klientow(klienci, (pool_size / 2 + 1));
         }
         
         pthread_mutex_unlock(&mutex_brodzik);
@@ -371,9 +301,8 @@ void *wychodzenie_olimpijski(void *arg) {
                 break;
             }
         }
-        // printf("Po zablokowaniu");
-        // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-        // wyswietl_klientow(klienci, pool_size + 1);
+        printf("\nStan tablicy klienci po usunięciu klienta OLIMPIJSKI:\n");
+        wyswietl_klientow(klienci, pool_size + 1);
 
         pthread_mutex_unlock(&mutex_olimpijski);
     }
@@ -403,16 +332,17 @@ void *wychodzenie_rekreacyjny(void *arg){
                     klienci[0][0]--;
                 }
 
-                // printf("\nStan tablicy klienci REKREACYJNY:\n");
-                //     printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
-                //     for (int i = 1; i <= pool_size; i++) {
-                //         if (klienci[0][i] == 0) {
-                //             printf("Miejsce %d: PUSTE\n", i);
-                //         } else {
-                //             printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
-                //         }
-                //     }
-                //     printf("\n");
+                printf("\nStan tablicy klienci po usunięciu klienta REKREACYJNY:\n");
+                printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                for (int i = 1; i <= pool_size; i++) {
+                    if (klienci[0][i] == 0) {
+                        printf("Miejsce %d: PUSTE\n", i);
+                    } else {
+                        printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                    }
+                }
+                printf("\n");
+
                 break;
             }
         }
@@ -448,8 +378,8 @@ void *wychodzenie_brodzik(void *arg){
             }
         }
         // // printf("Po zablokowaniu");
-        // printf("\nStan tablicy klienci BRODZIK:\n");
-        // wyswietl_klientow(klienci, (pool_size/2 + 1));
+        printf("\nStan tablicy klienci po usunięciu klienta BRODZIK:\n");
+        wyswietl_klientow(klienci, (pool_size/2 + 1));
 
         pthread_mutex_unlock(&mutex_brodzik);
     }
@@ -501,6 +431,17 @@ void* sygnal(void *arg){
                 klienci[1][i] = 0;
             }
         }
+
+        printf("\nStan tablicy klienci po wysłaniu sygnału REKREACYJNY:\n");
+                printf("Liczba klientów na basenie: %d\n", klienci[0][0]);
+                for (int i = 1; i <= pool_size; i++) {
+                    if (klienci[0][i] == 0) {
+                        printf("Miejsce %d: PUSTE\n", i);
+                    } else {
+                        printf("Miejsce %d: PID klienta %d Wiek: %d\n", i, klienci[0][i], klienci[1][i]);
+                    }
+                }
+                printf("\n");
     }
     else{
         for (int i = 1; i <= rozmiar; i++) {
@@ -512,18 +453,15 @@ void* sygnal(void *arg){
                 klienci[0]--;
             }
         }
+        if(pool_id == 1){
+            printf("\nStan tablicy klienci po wysłaniu sygnału 1 OLIMPIJSKI:\n");
+            wyswietl_klientow(klienci, pool_size + 1);
+        }
+        else{
+            printf("\nStan tablicy klienci po wysłaniu sygnału 1 BRODZIK:\n");
+            wyswietl_klientow(klienci, (pool_size / 2 + 1));
+        }  
     }
-   
-    // printf("\nStan tablicy klienci OLIMPIJSKI:\n");
-    // wyswietl_klientow(klienci, pool_size + 1);
-
-    // for (int i = 0; i < pool_size; i++) {
-    //     if (byli_klienci[i] == 0) {
-    //         printf("Miejsce %d: PUSTE\n", i);
-    //     } else {
-    //         printf("Miejsce %d: PID klienta %d\n", i, byli_klienci[i]);
-    //     }
-    // }
 
     pthread_mutex_unlock(mutex);
 

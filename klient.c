@@ -53,7 +53,7 @@ int main() {
     klient.basen = 0; // Basen na którym jest klient, początkowo 0 (jest na kompleksie basenowym)
 
     // Przygotowanie komunikatu do wysłania do kasjera
-    msg.mtype = vip;   
+    msg.mtype = vip;   // Status vip staje się typem komunikatu
     msg.pid = klient.pid;
     msg.wiek = klient.wiek;
     msg.czas_wyjscia = 0;

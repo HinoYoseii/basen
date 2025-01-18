@@ -14,7 +14,6 @@
 #include <time.h>
 #include <errno.h>
 
-
 #define MAX_CLIENTS 20
 
 // Definicje kolorów do wyświetlania w konsoli
@@ -56,4 +55,5 @@ struct shared_mem{
 
 struct tm* czas();  // Funkcja zwracająca godzine z momentu wywołania
 void sprawdz_blad(int wynik, const char *opis); // Funkcja sprawdzająca wywołania funkcji systemowych
+void sprawdz_blad_watek(int wynik, const char *opis); // Funkcja sprawdzająca poprawność wywołania funkcji systemowych dotyczących wątków
 void wyswietl_klientow(int *klienci, int rozmiar);  // Funkcja do wyśwwietlania tablicy jednowymiarowej
