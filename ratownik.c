@@ -112,12 +112,10 @@ int main(int argc, char *argv[]) {
             perror("pthread_create - wątek wpuszczania");
             exit(EXIT_FAILURE);
         }
-
         if (pthread_create(&t_wychodzenie, NULL, &wychodzenie_rekreacyjny, klienci) != 0) {
             perror("pthread_create - wątek wychodzenia");
             exit(EXIT_FAILURE);
         }
-
         if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
             perror("pthread_create - wątek wychodzenia");
             exit(EXIT_FAILURE);
@@ -127,11 +125,9 @@ int main(int argc, char *argv[]) {
         if (pthread_join(t_wpuszczanie, NULL) != 0) {
             perror("pthread_join - wątek wpuszczania");
         }
-
         if (pthread_join(t_wychodzenie, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
-
         if (pthread_join(t_sygnaly, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
@@ -163,12 +159,10 @@ int main(int argc, char *argv[]) {
             perror("pthread_create - wątek wpuszczania");
             exit(EXIT_FAILURE);
         }
-
         if (pthread_create(&t_wychodzenie, NULL, &wychodzenie_brodzik, klienci) != 0) {
             perror("pthread_create - wątek wychodzenia");
             exit(EXIT_FAILURE);
         }
-
         if (pthread_create(&t_sygnaly, NULL, &sygnal, klienci) != 0) {
             perror("pthread_create - wątek wychodzenia");
             exit(EXIT_FAILURE);
@@ -181,7 +175,6 @@ int main(int argc, char *argv[]) {
         if (pthread_join(t_wychodzenie, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
-        
         if (pthread_join(t_sygnaly, NULL) != 0) {
             perror("pthread_join - wątek wychodzenia");
         }
@@ -192,7 +185,7 @@ int main(int argc, char *argv[]) {
             exit(EXIT_FAILURE);
         }
     }
-
+    sprawdz_blad(shmdt(shared_data), "Błąd shmdt shared_data (ratownik) - odłączanie pamięci.");
     return 0;
 }
 

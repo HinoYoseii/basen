@@ -16,7 +16,7 @@
 #include <errno.h>
 #include <sys/shm.h>
 
-#define MAX_CLIENTS 10
+#define MAX_CLIENTS 20
 
 const char *RESET = "\033[0m";
 const char *RED = "\033[31m";

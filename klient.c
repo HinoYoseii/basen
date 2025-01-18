@@ -49,20 +49,15 @@ int main() {
     klient.wiek_opiekuna = (klient.wiek < 10) ? ((rand() % 53) + 18) : 0;
     klient.basen = 0;
 
-    msg.pid = klient.pid;
     msg.mtype = vip;
+    msg.pid = klient.pid;
     msg.wiek = klient.wiek;
     msg.czas_wyjscia = 0;
 
-    if (msgsnd(msgID, &msg, sizeof(msg), 0) == -1) {
-        perror("Blad msgsnd msgID (klient)");
-        exit(EXIT_FAILURE);
-    }
+    sprawdz_blad(msgsnd(msgID, &msg, sizeof(msg) - sizeof(long), 0), "Blad msgsnd msgID (klient) - wysyłanie komunikatu do kasjera o wejście na basen");
     
-    if (msgrcv(msgID, &msg, sizeof(msg), getpid(), 0) == -1) {
-        perror("Blad msgrcv msgID (klient)");
-        exit(EXIT_FAILURE);
-    }
+    sprawdz_blad(msgrcv(msgID, &msg, sizeof(msg) - sizeof(long), getpid(), 0), "Blad msgrcv msgID (klient) - odbieranie komunikatu od kasjera o wejście na basen");
+
     klient.czas_wyjscia = msg.czas_wyjscia;
 
     local = czas();
@@ -98,18 +93,13 @@ int main() {
             }
 
             msgr.mtype = nr_basenu;
+            sprawdz_blad(msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0), "Blad msgsnd msgrID (klient) - wysyłanie komunikatu do ratownika o wejście do wybranego basenu");
 
-            if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
-                perror("Blad msgsnd msgrID (klient)");
-                exit(EXIT_FAILURE);
-            }
             local = czas();
             printf("%s[%02d:%02d:%02d  %d]%s Klient chce wejść do basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET, nr_basenu);
 
-            if (msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), getpid(), 0) == -1) {
-                perror("Blad msgrcv msgrID (klient)");
-                exit(EXIT_FAILURE);
-            }
+
+            sprawdz_blad(msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), getpid(), 0), "Blad msgsnd msgrID (klient) - odbieranie komunikatu od kasjera o wejście do wybranego basenu");
 
             if(msgr.kom == 't'){
                 local = czas();
@@ -147,10 +137,8 @@ int main() {
     if(klient.basen){
         printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu i basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
         msgr.mtype = klient.basen + 3;
-        if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {
-            perror("Blad msgsnd msgrID (klient)");
-            exit(EXIT_FAILURE);
-        }
+        sprawdz_blad(msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0), "Blad msgsnd msgrID (klient) - wysyłanie komunikatu do ratownika o wyjście z basenu.");
+        
     }
     else{
         printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
