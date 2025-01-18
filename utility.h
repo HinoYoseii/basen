@@ -15,7 +15,7 @@
 #include <stdbool.h>
 #include <errno.h>
 
-#define MAX_CLIENTS 100
+#define MAX_CLIENTS 10
 
 const char *RESET = "\033[0m";
 const char *RED = "\033[31m";

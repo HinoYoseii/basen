@@ -53,7 +53,6 @@ int main() {
     key_t msg_key, msgr_key;
     
     struct tm *local;
-    int dzieci = 0;
 
     msg_key = ftok(".", 'M');
     sprawdz_blad(msg_key, "ftok M (zarzadca)");
@@ -73,8 +72,6 @@ int main() {
         printf("\n\n");
         local = czas();
         zamkniecie = time(NULL) + dlugosc_otwarcia;
-        time_t okresowe_zamkniecie = zamkniecie - (dlugosc_otwarcia / 2);
-        //time_t okresowe_otwarcie = okresowe_zamkniecie + (dlugosc_otwarcia / 10);
 
         char time_str[32]; 
         pid_kasjer = fork();
@@ -104,7 +101,8 @@ int main() {
         printf("\n");
         printf("%s[%02d:%02d:%02d]%s OTWARCIE KOMPLEKSU BASENOWEGO\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
 
-        while (time(NULL) < zamkniecie) {
+        int dzieci = 0;
+        while (time(NULL) < zamkniecie && dzieci < MAX_CLIENTS) {
             pid_t pid_klient = fork();
             sprawdz_blad(pid_klient, "Blad fork pid_klient (zarzadca)");
 
@@ -113,21 +111,10 @@ int main() {
                 sprawdz_blad(-1, "Blad execl pid_klient (zarzadca)");
             } else {
                 dzieci++;
-                // if(time(NULL) >= okresowe_zamkniecie){
-                //         for (int i = 0; i < dzieci; i++) {
-                //         int status;
-                //         pid_t finished_pid = wait(&status);
-                //         sprawdz_blad(finished_pid, "Błąd wait");
-
-                //         //printf("%sProces o PID %d zakończył się. Status: %d%s\n", YELLOW, finished_pid, WEXITSTATUS(status), RESET);
-                //     }
-                //     printf("%s[%02d:%02d:%02d]%s OKRESOWE ZAMKNIECIE KOMPLEKSU. NASTĘPUJE WYMIANA WODY\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
-                //     dzieci = 0;
-                //     sleep(dlugosc_otwarcia / 10);
-                // }
-                sleep(rand() % 6 + 1);
+                //sleep(rand() % 6 + 1);
             }
         }
+
 
         local = czas();
         for (int i = 0; i < dzieci; i++) {
@@ -135,7 +122,7 @@ int main() {
             pid_t finished_pid = wait(&status);
             sprawdz_blad(finished_pid, "Błąd wait");
 
-            //printf("%sProces o PID %d zakończył się. Status: %d%s\n", YELLOW, finished_pid, WEXITSTATUS(status), RESET);
+            printf("%sProces o PID %d zakończył się. Status: %d%s\n", YELLOW, finished_pid, WEXITSTATUS(status), RESET);
         }
         printf("%s[%02d:%02d:%02d]%s ZAMKNIECIE KOMPLEKSU\n", RED, local->tm_hour, local->tm_min, local->tm_sec, RESET);
 
@@ -147,13 +134,13 @@ int main() {
         }
         sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
 
-        sleep(dlugosc_otwarcia * 2);
+        sleep(10);
     }
 
     for (int i = 0; i < 3; i++) {
         sprawdz_blad(kill(pid_ratownik[i], SIGTERM), "Błąd kill pid_ratownik (zarzadca)");
     }
-    sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
+    //sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
     sprawdz_blad(msgctl(msgrID, IPC_RMID, NULL), "Błąd msgctl msgrID (zarzadca)");
     sprawdz_blad(msgctl(msgID, IPC_RMID, NULL), "Błąd msgctl msgID (zarzadca)");
 
@@ -166,7 +153,7 @@ void koniec(int sig) {
     for (int i = 0; i < 3; i++) {
         sprawdz_blad(kill(pid_ratownik[i], SIGTERM), "Błąd kill pid_ratownik (zarzadca)");
     }
-    sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
+    //sprawdz_blad(kill(pid_kasjer, SIGTERM), "Błąd kill pid_kasjer (zarzadca)");
     sprawdz_blad(msgctl(msgrID, IPC_RMID, NULL), "Błąd msgctl msgrID (zarzadca)");
     sprawdz_blad(msgctl(msgID, IPC_RMID, NULL), "Błąd msgctl msgID (zarzadca)");
 

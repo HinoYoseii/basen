@@ -92,6 +92,11 @@ int main() {
                 nr_basenu = (rand() % 3) + 1;
             } while (nr_basenu == ban);
 
+            if (msgr.mtype <= 0) {
+                fprintf(stderr, "Nieprawidłowy mtype: %ld\n", msgr.mtype);
+                exit(EXIT_FAILURE);
+            }
+
             msgr.mtype = nr_basenu;
 
             if (msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0) == -1) {

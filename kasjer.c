@@ -23,17 +23,7 @@ int main(int argc, char *argv[]) {
     local = czas();
     printf("%sKasjer [%d]%s Oczekiwanie na komunikaty...\n", BLUE, getpid(), RESET);
 
-
-    // time_t okresowe_zamkniecie = zamkniecie - (dlugosc_otwarcia / 2);
-    // time_t okresowe_otwarcie = okresowe_zamkniecie + (dlugosc_otwarcia / 4);
-
-    while (1) { 
-        // if(time(NULL) >= okresowe_zamkniecie){
-        //     local = czas();
-        //     printf("%s[%02d:%02d:%02d]%s KASJER ZAMYKA KASY")
-        //     sleep(dlugosc_otwarcia / 4);
-        // }
-
+    while (time(NULL) < zamkniecie) { 
         if (msgrcv(msgID, &msg, sizeof(msg), -2, 0) == -1) {
             perror("Blad msgrcv msgID (kasjer)");
             exit(EXIT_FAILURE);
