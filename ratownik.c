@@ -4,10 +4,11 @@
 pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik;
 pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;
 struct msgbuf_r msgr;
-int msgrID, pool_id, pool_size;
-key_t msgr_key;
+int msgrID, pool_id, pool_size, shmID, dlugosc_otwarcia;
+key_t msgr_key, shm_key;
 int czynny = 1;
 struct tm *local;
+struct shared_mem *shared_data;
 
 // Funkcje wątków
 void *olimpijski(void *arg);
@@ -36,6 +37,15 @@ int main(int argc, char *argv[]) {
     msgrID = msgget(msgr_key, IPC_CREAT | 0666);
     sprawdz_blad(msgrID, "msgget msgrID (zarzadca)");
 
+    shm_key = ftok(".", 'S');
+    sprawdz_blad(shm_key, "ftok S (zarzadca)");
+    shmID = shmget(shm_key, sizeof(struct shared_mem), IPC_CREAT | 0666);
+    sprawdz_blad(shmID, "shmget shmID (zarzadca)");
+
+    shared_data = shmat(shmID, NULL, 0);
+    dlugosc_otwarcia = shared_data->dlugosc_otwarcia;
+
+    //printf("%d\n", dlugosc_otwarcia);
     printf("%sRatownik [%d]%s Obsługuje basen %d o rozmiarze %d\n", MAGENTA, getpid(), RESET, pool_id, pool_size);
 
     if (pool_id == 1) {
@@ -489,8 +499,18 @@ void* sygnal(void *arg){
     for(int i = 0; i < rozmiar; i++)
         byli_klienci[i] = 0;
 
-    time_t send_signal1 = time(NULL) + rand() % 20 + 10;
-    time_t send_signal2 = send_signal1 + rand() % 10 + 5;
+    struct tm *wyjscie;
+    // time_t send_signal1 = time(NULL) + rand() % 20 + 10;
+    // time_t send_signal2 = send_signal1 + rand() % 10 + 5;
+    
+    time_t send_signal1 = time(NULL) + rand() % (shared_data->dlugosc_otwarcia / 4) + 5;
+    time_t send_signal2 = send_signal1 + rand() % (shared_data->dlugosc_otwarcia / 5) + 5;
+
+    wyjscie = localtime(&send_signal1);
+    printf("%s[%02d:%02d:%02d %d]%s Wyslanie sygnalu 1.\n", CYAN, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec, pool_id, RESET);
+    wyjscie = localtime(&send_signal2);
+    printf("%s[%02d:%02d:%02d %d]%s Wyslanie sygnalu 2.\n", CYAN, wyjscie->tm_hour, wyjscie->tm_min, wyjscie->tm_sec, pool_id, RESET);
+    
 
     while (time(NULL) < send_signal1) {
         sleep(1);

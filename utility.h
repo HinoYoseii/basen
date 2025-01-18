@@ -14,6 +14,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <sys/shm.h>
 
 #define MAX_CLIENTS 10
 
@@ -46,6 +47,10 @@ struct klient_dane{
     int wiek_opiekuna;
     time_t czas_wyjscia;
     int basen;
+};
+
+struct shared_mem{
+    int dlugosc_otwarcia;
 };
 
 struct tm* czas();
