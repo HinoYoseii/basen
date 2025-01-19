@@ -166,7 +166,7 @@ void signal_handler(int signal_num){
     }
     // Po odebraniu sygnału SIGUSR2 klient odblokowuje zabkolowany basen aby mógł go ponownie losować
     else if (signal_num == SIGUSR2) {
-        printf("%s[%d]%s Klient odebrał sygnał 2. Znowu może wejśc na basen nr. %d\n", RED, getpid(), RESET, ban);
+        //printf("%s[%d]%s Klient odebrał sygnał 2. Znowu może wejśc na basen nr. %d\n", RED, getpid(), RESET, ban); // Do testowania
         ban = 0;
     }
 }
