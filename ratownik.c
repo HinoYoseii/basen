@@ -417,8 +417,8 @@ void* sygnal(void *arg){
         byli_klienci[i] = 0;
     
     // Przypisanie godziny wysyłania sygnałów w trakcie otwarcia kompleksu
-    time_t send_signal1 = shared_data->otwarcie + rand() % (shared_data->dlugosc_otwarcia / 4) + 1;
-    time_t send_signal2 = send_signal1 + rand() % (shared_data->dlugosc_otwarcia / 4) + 1;
+    time_t send_signal1 = shared_data->otwarcie + rand() % (shared_data->dlugosc_otwarcia / 4) + 10;
+    time_t send_signal2 = send_signal1 + rand() % (shared_data->dlugosc_otwarcia / 4) + 5;
 
     // Wyświetlenie godziny planowanego wysłania sygnału
     struct tm *sygnal_godzina;

@@ -108,7 +108,7 @@ int main() {
         }
     }
 
-    //sleep(3); // Dla estetyki w konsoli, można zakomentować
+    sleep(3); // Dla estetyki w konsoli, można zakomentować
 
     int dzieci = 0; // Licznik procesów potomnych klientów
     while (time(NULL) < shared_data->zamkniecie && dzieci <= MAX_CLIENTS) {
