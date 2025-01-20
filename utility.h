@@ -51,6 +51,8 @@ struct klient_dane{
 
 struct shared_mem{
     int dlugosc_otwarcia;   // Długośc otwarcia basenu, podana przez użytkownika
+    time_t zamkniecie;  // Godzina zamknięcia kompleksu
+    time_t otwarcie;    // Godzina otwarcia kompleksu
 };
 
 struct tm* czas();  // Funkcja zwracająca godzine z momentu wywołania

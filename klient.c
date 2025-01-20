@@ -61,28 +61,28 @@ int main() {
     // Wysłanie komunikatu do kasjera
     sprawdz_blad(msgsnd(msgID, &msg, sizeof(msg) - sizeof(long), 0), "Blad msgsnd msgID (klient) - wysyłanie komunikatu do kasjera o wejście na basen");
     // Odebranie komunikatu od kasjera
-    sprawdz_blad(msgrcv(msgID, &msg, sizeof(msg) - sizeof(long), getpid(), 0), "Blad msgrcv msgID (klient) - odbieranie komunikatu od kasjera o wejście na basen");
+    sprawdz_blad(msgrcv(msgID, &msg, sizeof(msg) - sizeof(long), klient.pid, 0), "Blad msgrcv msgID (klient) - odbieranie komunikatu od kasjera o wejście na basen");
 
     // Przypisanie klientowi godziny wyjścia odebranej z komunikatu od kasjera
     klient.czas_wyjscia = msg.czas_wyjscia;
 
     local = czas();
-    printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na kompleks basenowy.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+    printf("%s[%02d:%02d:%02d  %d]%s Klient wchodzi na kompleks basenowy.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, klient.pid, RESET);
 
     // Jeżeli klient ma 3 lata lub mniej to zakłada pampers :)
     if(klient.wiek <= 3){
         local = czas();
-        printf("%s[%02d:%02d:%02d  %d]%s Dziecko zakłada pampers do plywania. Wiek: %d\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.wiek);
+        printf("%s[%02d:%02d:%02d  %d]%s Dziecko zakłada pampers do plywania. Wiek: %d\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, klient.pid, RESET, klient.wiek);
     }
 
     // Losuje możliwość założenia czepka przez klienta
     if((rand() % 6 + 1 == 6) ? 1 : 0){
         local = czas();
-        printf("%s[%02d:%02d:%02d  %d]%s Klient zakłada czepek.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+        printf("%s[%02d:%02d:%02d  %d]%s Klient zakłada czepek.\n", GREEN, local->tm_hour, local->tm_min, local->tm_sec, klient.pid, RESET);
     }
     
     // Przygotowanie komunikatu do wysłania do ratownika
-    msgr.pid = getpid();
+    msgr.pid = klient.pid;
     msgr.wiek = klient.wiek;
     msgr.wiek_opiekuna = klient.wiek_opiekuna;
 
@@ -103,7 +103,7 @@ int main() {
             local = czas();
             printf("%s[%02d:%02d:%02d  %d]%s Klient chce wejść do basenu nr.%d.\n", MAGENTA, local->tm_hour, local->tm_min, local->tm_sec, msgr.pid, RESET, nr_basenu);
             // Odbieranie komunikatu od ratownika o wstępie do basenu
-            sprawdz_blad(msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), getpid(), 0), "Blad msgsnd msgrID (klient) - odbieranie komunikatu od kasjera o wejście do wybranego basenu");
+            sprawdz_blad(msgrcv(msgrID, &msgr, sizeof(msgr) - sizeof(long), klient.pid, 0), "Blad msgsnd msgrID (klient) - odbieranie komunikatu od kasjera o wejście do wybranego basenu");
 
             if(msgr.kom == 't'){
                 // Klient wchodzi do basenu, przypisuje sobie wybrany basen, ustawia spanie = 1 tak żeby wykonał się sleep(1)
@@ -115,16 +115,16 @@ int main() {
             else{
                 // Klient nie jest wpuszczony do basenu, wyświetla się komunikat z jakiego powodu
                 if(msgr.kom == 'c'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d ponieważ basen jest tymczasowo nieczynny.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d ponieważ basen jest tymczasowo nieczynny.\n", YELLOW, klient.pid, RESET, nr_basenu, klient.wiek);
                 }
                 else if(msgr.kom == 'w'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez wiek: %d.\n", YELLOW, getpid(), RESET, nr_basenu, klient.wiek);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez wiek: %d.\n", YELLOW, klient.pid, RESET, nr_basenu, klient.wiek);
                 }
                 else if(msgr.kom == 'n'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez pełny basen.\n", YELLOW, getpid(), RESET, nr_basenu);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez pełny basen.\n", YELLOW, klient.pid, RESET, nr_basenu);
                 }
                 else if(msgr.kom == 's'){
-                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, getpid(), RESET, nr_basenu);
+                    printf("%s[%d]%s Klient nie został wpuszczony do basenu nr.%d przez srednia wieku.\n", YELLOW, klient.pid, RESET, nr_basenu);
                 }
                 spanie = ((rand() % 20) + 1);
             }
@@ -143,13 +143,13 @@ int main() {
     local = czas();
     // Jeżeli był w basenie to wysyła komunikat do ratownika że wychodzi z tego basenu, inaczej klient po prostu wyświetla że opuszcza kompleks
     if(klient.basen){
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu i basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET, klient.basen);
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu i basenu nr.%d.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, klient.pid, RESET, klient.basen);
         // Wysyłanie komunikatu do ratownika o wyjściu Ratownik 1: 4, Ratownik 2: 5, Ratownik 3: 6
         msgr.mtype = klient.basen + 3;
         sprawdz_blad(msgsnd(msgrID, &msgr, sizeof(msgr) - sizeof(long), 0), "Blad msgsnd msgrID (klient) - wysyłanie komunikatu do ratownika o wyjście z basenu.");
     }
     else{
-        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, getpid(), RESET);
+        printf("%s[%02d:%02d:%02d  %d]%s Klient wychodzi z kompleksu basenowego.\n", RED, local->tm_hour, local->tm_min, local->tm_sec, klient.pid, RESET);
     }
     
     return 0;
@@ -159,14 +159,14 @@ int main() {
 void signal_handler(int signal_num){
     // Po odebraniu sygnału SIGUSR1 klient ustawia swój obecny basen jako zablokowany basen, a swój basen ustawia jako 0
     if(signal_num == SIGUSR1){
-        printf("%s[%d]%s Klient odebral sygnal 1 Wychodzi z basenu nr.%d.\n", RED, getpid(), RESET, klient.basen);
+        printf("%s[%d]%s Klient odebral sygnal 1 Wychodzi z basenu nr.%d.\n", RED, klient.pid, RESET, klient.basen);
         ban = klient.basen;
         klient.basen = 0;
         
     }
     // Po odebraniu sygnału SIGUSR2 klient odblokowuje zabkolowany basen aby mógł go ponownie losować
     else if (signal_num == SIGUSR2) {
-        //printf("%s[%d]%s Klient odebrał sygnał 2. Znowu może wejśc na basen nr. %d\n", RED, getpid(), RESET, ban); // Do testowania
+        //printf("%s[%d]%s Klient odebrał sygnał 2. Znowu może wejśc na basen nr. %d\n", RED, klient.pid, RESET, ban); // Do testowania
         ban = 0;
     }
 }

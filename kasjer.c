@@ -2,16 +2,13 @@
 
 int main(int argc, char *argv[]) {
     srand(time(NULL));
-    if (argc < 2) {
-        fprintf(stderr, "Brak podanego czasu!\n");
-        exit(EXIT_FAILURE);
-    }
 
-    key_t msg_key;  // Klucz kolejki komunikatów
-    int msgID;  // ID kolejki komunikatów
-    time_t zamkniecie = (time_t)strtol(argv[1], NULL, 10);  // godzina zamknięcia basenu
+    key_t msg_key, shm_key;  // Klucz kolejki komunikatów
+    int msgID, shmID;  // ID kolejki komunikatów
+    time_t zamkniecie; // godzina zamknięcia basenu
     struct msgbuf msg;  // Bufor do kolejki komunikatów
     struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
+    struct shared_mem *shared_data;
 
     // Dołączenie do kolejki komunikatów klient <-> kasjer
     msg_key = ftok(".", 'M');
@@ -19,7 +16,13 @@ int main(int argc, char *argv[]) {
     msgID = msgget(msg_key, IPC_CREAT | 0666);
     sprawdz_blad(msgID, "msgget msgID (kasjer)");
 
-    local = czas();
+    shm_key = ftok(".", 'S');
+    sprawdz_blad(shm_key, "ftok S (zarzadca)");
+    shmID = shmget(shm_key, sizeof(struct shared_mem), IPC_CREAT | 0666);
+    sprawdz_blad(shmID, "shmget shmID (zarzadca)");
+    shared_data = shmat(shmID, NULL, 0);
+    zamkniecie = time(NULL) + shared_data->dlugosc_otwarcia;
+
     printf("%sKasjer [%d]%s Oczekiwanie na komunikaty...\n", BLUE, getpid(), RESET);
 
     while (1) { 
@@ -48,7 +51,7 @@ int main(int argc, char *argv[]) {
         msg.czas_wyjscia = time(NULL) + 20;
 
         if (msg.czas_wyjscia > zamkniecie){
-            msg.czas_wyjscia = zamkniecie - 1;
+            msg.czas_wyjscia = zamkniecie - 5;
         }
 
         // Ustawienie typu komunikatu na pid obsługiwanego klienta

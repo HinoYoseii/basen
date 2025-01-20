@@ -5,6 +5,7 @@ pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;  // Identifykatory wątków w
 key_t msgr_key, shm_key;    // Klucze do kolejki komunikatów i pamięci współdzielonej
 int msgrID, shmID; // ID kolejki komunikatów i pamięci współdzielonej
 int pool_id, pool_size, dlugosc_otwarcia, czynny = 1;   // zmienne do obsługi basenów
+time_t zamkniecie;
 struct msgbuf_r msgr;   // Bufor do komunikatu
 struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
 struct shared_mem *shared_data; // Wskaźnik na strukture pamięci współdzielonej
@@ -43,6 +44,7 @@ int main(int argc, char *argv[]) {
     // Pobranie długości otwarcia basenu z pamięci współdzielonej
     shared_data = shmat(shmID, NULL, 0);
     dlugosc_otwarcia = shared_data->dlugosc_otwarcia;
+    zamkniecie = shared_data->zamkniecie;
 
     printf("%sRatownik [%d]%s Obsługuje basen %d o rozmiarze %d\n", MAGENTA, getpid(), RESET, pool_id, pool_size);
 
@@ -415,8 +417,8 @@ void* sygnal(void *arg){
         byli_klienci[i] = 0;
     
     // Przypisanie godziny wysyłania sygnałów w trakcie otwarcia kompleksu
-    time_t send_signal1 = time(NULL) + rand() % (shared_data->dlugosc_otwarcia / 4) + 5;
-    time_t send_signal2 = send_signal1 + rand() % (shared_data->dlugosc_otwarcia / 5) + 5;
+    time_t send_signal1 = shared_data->otwarcie + rand() % (shared_data->dlugosc_otwarcia / 4) + 1;
+    time_t send_signal2 = send_signal1 + rand() % (shared_data->dlugosc_otwarcia / 4) + 1;
 
     // Wyświetlenie godziny planowanego wysłania sygnału
     struct tm *sygnal_godzina;
