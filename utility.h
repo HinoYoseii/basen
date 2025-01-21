@@ -14,7 +14,7 @@
 #include <time.h>
 #include <errno.h>
 
-#define MAX_CLIENTS 20
+#define MAX_CLIENTS 5000
 
 // Definicje kolorów do wyświetlania w konsoli
 const char *RESET = "\033[0m";

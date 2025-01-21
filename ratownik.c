@@ -1,22 +1,22 @@
 #include "utility.c"
 
 pthread_mutex_t mutex_olimpijski, mutex_rekreacyjny, mutex_brodzik; // Mutexy do blokowania poszczególych basenów
-pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;  // Identifykatory wątków w każdym z procesów
-key_t msgr_key, shm_key;    // Klucze do kolejki komunikatów i pamięci współdzielonej
-int msgrID, shmID; // ID kolejki komunikatów i pamięci współdzielonej
-int pool_id, pool_size, dlugosc_otwarcia, czynny = 1;   // zmienne do obsługi basenów
+pthread_t t_wpuszczanie, t_wychodzenie, t_sygnaly;                  // Identifykatory wątków w każdym z procesów
+key_t msgr_key, shm_key;                                            // Klucze do kolejki komunikatów i pamięci współdzielonej
+int msgrID, shmID;                                                  // ID kolejki komunikatów i pamięci współdzielonej
+int pool_id, pool_size, dlugosc_otwarcia, czynny = 1;               // zmienne do obsługi basenów
 time_t zamkniecie;
-struct msgbuf_r msgr;   // Bufor do komunikatu
-struct tm *local;   // Wskaźnik do wyświetlania obecnego czasu
-struct shared_mem *shared_data; // Wskaźnik na strukture pamięci współdzielonej
+struct msgbuf_r msgr;                                               // Bufor do komunikatu
+struct tm *local;                                                   // Wskaźnik do wyświetlania obecnego czasu
+struct shared_mem *shared_data;                                     // Wskaźnik na strukture pamięci współdzielonej
 
-void *olimpijski(void *arg);    // Funkcja obsługująca klientów wchodzących do basenu olimpijskiego
-void *rekreacyjny(void *arg);   // Funkcja obsługująca klientów wchodzących do basenu rekreacyjnego
-void *brodzik(void *arg);       // Funkcja obsługująca klientów wchodzących do brodzika
-void *wychodzenie_olimpijski(void *arg);    // Funkcja obsługująca klientów wychodzących z basenu olimpijskiego
-void *wychodzenie_rekreacyjny(void *arg);   // Funkcja obsługująca klientów wychodzących z basenu rekreacyjnego
-void *wychodzenie_brodzik(void *arg);       // Funkcja obsługująca klientów wychodzących z brodzika
-void* sygnal(void *arg);    // Funkcja do obsługi wysyłania sygnałów
+void *olimpijski(void *arg);                                        // Funkcja obsługująca klientów wchodzących do basenu olimpijskiego
+void *rekreacyjny(void *arg);                                       // Funkcja obsługująca klientów wchodzących do basenu rekreacyjnego
+void *brodzik(void *arg);                                           // Funkcja obsługująca klientów wchodzących do brodzika
+void *wychodzenie_olimpijski(void *arg);                            // Funkcja obsługująca klientów wychodzących z basenu olimpijskiego
+void *wychodzenie_rekreacyjny(void *arg);                           // Funkcja obsługująca klientów wychodzących z basenu rekreacyjnego
+void *wychodzenie_brodzik(void *arg);                               // Funkcja obsługująca klientów wychodzących z brodzika
+void* sygnal(void *arg);                                            // Funkcja do obsługi wysyłania sygnałów
 
 int main(int argc, char *argv[]) {
     srand(getpid());

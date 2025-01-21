@@ -1,8 +1,14 @@
 #include "utility.c"
 
 int msgID, msgrID, shmID;   // ID do kolejek i pamięci
+int dzieci = 0; // Licznik procesów potomnych klientów
 pid_t pid_kasjer, pid_ratownik[3];  // Pid do zamknięcia procesów
+pthread_t czyszczenie;
+pthread_mutex_t mutex_dzieci;
 
+volatile sig_atomic_t zakoncz_watek = 0; // flaga do zakończenia wątku czyszczenia
+
+void *czyszczenie_procesow();
 void koniec(int sig);
 
 int main() {
@@ -108,9 +114,12 @@ int main() {
         }
     }
 
+    // Inicjalizacja mutexa i wątku do czyszczenia procesów zombie
+    sprawdz_blad_watek(pthread_mutex_init(&mutex_dzieci, NULL), "pthread_mutex_init ratownik 1 - mutex olimpijski");
+    sprawdz_blad_watek(pthread_create(&czyszczenie, NULL, &czyszczenie_procesow, NULL), "pthread_create ratownik 1 - wątek t_wpuszczanie");
+
     sleep(3); // Dla estetyki w konsoli, można zakomentować
 
-    int dzieci = 0; // Licznik procesów potomnych klientów
     while (time(NULL) < shared_data->zamkniecie && dzieci <= MAX_CLIENTS) {
         pid_t pid_klient = fork();
         sprawdz_blad(pid_klient, "Blad fork pid_klient (zarzadca)");
@@ -119,12 +128,19 @@ int main() {
             execl("./klient", "klient", NULL);
             sprawdz_blad(-1, "Blad execl pid_klient (zarzadca)");
         } else {
+            pthread_mutex_lock(&mutex_dzieci);
             dzieci++;
+            pthread_mutex_unlock(&mutex_dzieci);
             sleep(rand() % 5 + 1);
         }
     }
 
-    // Oczekiwanie na zakończenie klientów
+    // Oczekiwaie na zakończenie wątku czyszczenia i zniszczenie mutexa
+    zakoncz_watek = 1;
+    sprawdz_blad_watek(pthread_join(czyszczenie, NULL), "pthread_join zarzadca - wątek czyszczenie");
+    sprawdz_blad_watek(pthread_mutex_destroy(&mutex_dzieci), "pthread_mutex_destroy zarzadca - mutex dzieci");
+
+    // Oczekiwanie na zakończenie reszty klientów jeżeli jest taka potrzeba
     local = czas();
     for (int i = 0; i < dzieci; i++) {
         int status;
@@ -158,4 +174,22 @@ void koniec(int sig) {
 
     printf("ZARZADCA - funkcja koniec sygnal %d: Koniec.\n", sig);
     exit(1);
+}
+
+void *czyszczenie_procesow(void *arg) {
+    // czyszczenie procesów zombie
+    while (!zakoncz_watek) {
+        int status;
+        pid_t finished_pid = waitpid(-1, &status, WNOHANG);
+        if (finished_pid > 0) {
+            pthread_mutex_lock(&mutex_dzieci);
+            dzieci--;
+            pthread_mutex_unlock(&mutex_dzieci);
+            // printf("Proces klienta o PID %d zakończony. Status: %d\n", finished_pid, WEXITSTATUS(status));
+        } else if (finished_pid == 0) {
+            // Brak zakończonych procesów odczekuje chwile
+            usleep(100000); // 100ms
+        }
+    }
+    return NULL;
 }
