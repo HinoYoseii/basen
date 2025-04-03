@@ -42,6 +42,7 @@ void sprawdz_blad(int wynik, const char *opis) {
     }
 }
 
+void sprawdz_blad_watek(int wynik, const char *opis) {
 // Funkcja sprawdzająca poprawność wywołania funkcji systemowych dotyczących wątków
 //
 // Opis:
@@ -55,13 +56,13 @@ void sprawdz_blad(int wynik, const char *opis) {
 //
 // Wartość zwracana:
 // - Funkcja nie zwraca wartości. W przypadku błędu kończy program.
-void sprawdz_blad_watek(int wynik, const char *opis) {
     if (wynik != 0) {
         fprintf(stderr, "%s failed: %s\n", opis, strerror(wynik));
         exit(EXIT_FAILURE);
     }
 }
 
+void wyswietl_klientow(int *klienci, int rozmiar) {
 // Funkcja do wyświetlania zawartości tablicy jednowymiarowej reprezentującej klientów
 //
 // Opis:
@@ -79,7 +80,6 @@ void sprawdz_blad_watek(int wynik, const char *opis) {
 // Wartość zwracana:
 // - Funkcja nie zwraca wartości. Wyświetla informacje w konsoli.
 
-void wyswietl_klientow(int *klienci, int rozmiar) {
     printf("Liczba klientów na basenie: %d\n", klienci[0]);
     for (int i = 1; i < rozmiar; i++) {
         if (klienci[i] == 0) {
